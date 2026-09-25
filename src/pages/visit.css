@@ -1,0 +1,278 @@
+.visit-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(232, 198, 107, 0.06), transparent 30%),
+    linear-gradient(180deg, #020807 0%, #03100e 55%, #020807 100%);
+  color: #f7f5ee;
+}
+
+.visit-hero {
+  min-height: calc(100vh - 1px);
+  display: flex;
+  align-items: center;
+  padding: 120px 0 110px;
+}
+
+.visit-container {
+  width: min(1320px, 86vw);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 0.9fr;
+  gap: 90px;
+  align-items: center;
+}
+
+.visit-copy {
+  max-width: 650px;
+}
+
+.visit-eyebrow {
+  margin: 0 0 24px;
+  color: #e8c66b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.visit-copy h1 {
+  margin: 0;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(56px, 6vw, 92px);
+  font-weight: 400;
+  line-height: 0.94;
+  letter-spacing: -0.055em;
+}
+
+.visit-copy h1 em {
+  color: #fff0b7;
+  font-style: italic;
+}
+
+.visit-intro {
+  max-width: 570px;
+  margin: 34px 0 45px;
+  color: #9ba9a5;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.visit-details {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.visit-detail {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 18px;
+  padding: 19px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.visit-label {
+  color: #e8c66b;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.visit-detail strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f7f5ee;
+}
+
+.visit-detail small {
+  grid-column: 2;
+  margin-top: -10px;
+  color: #687873;
+  font-size: 11px;
+}
+
+.visit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.visit-button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 0 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.visit-button:hover {
+  transform: translateY(-2px);
+}
+
+.visit-button-gold {
+  background: #e8c66b;
+  color: #06100d;
+}
+
+.visit-button-gold:hover {
+  background: #f0d27f;
+}
+
+.visit-button-outline {
+  border: 1px solid rgba(232, 198, 107, 0.35);
+  color: #f7f5ee;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.visit-button-outline:hover {
+  border-color: #e8c66b;
+}
+
+.visit-socials {
+  display: flex;
+  gap: 28px;
+  margin-top: 32px;
+}
+
+.visit-socials a {
+  color: #8d9d98;
+  font-size: 11px;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.visit-socials a:hover {
+  color: #e8c66b;
+}
+
+/* Video */
+
+.visit-video-wrap {
+  width: 100%;
+}
+
+.visit-video-card {
+  padding: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: 0 35px 100px rgba(0, 0, 0, 0.4);
+}
+
+.visit-video-top,
+.visit-video-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px 14px;
+}
+
+.visit-video-top {
+  color: #73827e;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.visit-video {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #000;
+}
+
+.visit-video iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+}
+
+.visit-video-bottom {
+  padding: 15px 4px 4px;
+}
+
+.visit-video-bottom span {
+  color: #c8d0cc;
+  font-size: 11px;
+}
+
+.visit-video-bottom a {
+  color: #e8c66b;
+  font-size: 10px;
+  text-decoration: none;
+}
+
+@media (max-width: 950px) {
+  .visit-hero {
+    padding: 100px 0 80px;
+  }
+
+  .visit-container {
+    grid-template-columns: 1fr;
+    gap: 60px;
+  }
+
+  .visit-copy {
+    max-width: none;
+  }
+
+  .visit-video-wrap {
+    max-width: 720px;
+  }
+}
+
+@media (max-width: 600px) {
+  .visit-hero {
+    padding: 80px 0 60px;
+  }
+
+  .visit-container {
+    width: min(90vw, 600px);
+    gap: 45px;
+  }
+
+  .visit-copy h1 {
+    font-size: clamp(48px, 15vw, 70px);
+  }
+
+  .visit-intro {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .visit-detail {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .visit-detail small {
+    grid-column: 1;
+    margin-top: 0;
+  }
+
+  .visit-actions {
+    flex-direction: column;
+  }
+
+  .visit-button {
+    width: 100%;
+  }
+
+  .visit-socials {
+    justify-content: center;
+  }
+
+  .visit-video-card {
+    padding: 10px;
+  }
+}

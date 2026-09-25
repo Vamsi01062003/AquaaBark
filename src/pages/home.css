@@ -1,0 +1,77 @@
+.home-page {
+  width: 100%;
+  min-height: 100vh;
+  background: #020807;
+}
+
+.hero-exact {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #020807;
+  line-height: 0;
+}
+
+.hero-background {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+}
+
+/*
+  The button is positioned over the existing
+  "Explore Collection" button printed in the hero image.
+*/
+.hero-explore-button {
+  position: absolute;
+
+  left: 7.2%;
+  top: 58.8%;
+
+  width: 17.8%;
+  height: 8.3%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 0;
+
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+
+  color: transparent;
+  cursor: pointer;
+
+  z-index: 10;
+}
+
+/*
+  The text is hidden because the original hero artwork
+  already contains the visible Explore Collection text.
+*/
+.hero-explore-button span {
+  opacity: 0;
+}
+
+.hero-explore-button:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.hero-explore-button:focus-visible {
+  outline: 2px solid #e8c66b;
+  outline-offset: 4px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .hero-explore-button {
+    left: 7.2%;
+    top: 58.8%;
+    width: 28%;
+    height: 9%;
+  }
+}
