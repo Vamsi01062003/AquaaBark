@@ -305,18 +305,25 @@
   background: #061311;
 }
 
+/* ---------------------------------------------------------
+   FULL IMAGE DISPLAY
+   --------------------------------------------------------- */
+
 .collection-card-image img {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
+  padding: 10px;
+  box-sizing: border-box;
   transition:
     transform 0.55s cubic-bezier(0.2, 0.65, 0.3, 1),
     filter 0.35s ease;
 }
 
 .collection-card:hover .collection-card-image img {
-  transform: scale(1.045);
+  transform: scale(1.025);
   filter: brightness(1.04);
 }
 

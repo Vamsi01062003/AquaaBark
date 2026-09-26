@@ -21,6 +21,20 @@ const CATEGORY_ORDER = [
   "Others",
 ];
 
+function normalizeCategory(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+const CATEGORY_POSITION = new Map(
+  CATEGORY_ORDER.map((name, index) => [
+    normalizeCategory(name),
+    index,
+  ])
+);
+
 function formatPrice(price) {
   if (price === null || price === undefined || price === "") {
     return "Price on enquiry";
@@ -98,12 +112,12 @@ function FishCard({ fish }) {
       <div className="collection-card-content">
         <div className="collection-card-top">
           <span>
-            {fish.categories?.name || fish.category || "Aquatic Life"}
+            {fish.categories?.name ||
+              fish.category ||
+              "Aquatic Life"}
           </span>
 
-          <span>
-            {fish.size || ""}
-          </span>
+          <span>{fish.size || ""}</span>
         </div>
 
         <h3>{fish.name}</h3>
@@ -138,6 +152,7 @@ function SkeletonCard() {
   return (
     <div className="collection-card collection-skeleton">
       <div className="skeleton-image" />
+
       <div className="skeleton-content">
         <span />
         <span />
@@ -165,73 +180,155 @@ export default function Collection() {
       if (!supabase) {
         if (mounted) {
           setLoading(false);
-          setError("Inventory connection is not configured.");
+          setError(
+            "Inventory connection is not configured."
+          );
         }
+
         return;
       }
 
-      const [categoryResult, fishResult] = await Promise.all([
-        supabase
-          .from("categories")
-          .select("id,slug,name,is_active,sort_order")
-          .eq("is_active", true)
-          .order("sort_order", { ascending: true }),
+      const [categoryResult, fishResult] =
+        await Promise.all([
+          supabase
+            .from("categories")
+            .select(
+              "id,slug,name,is_active,sort_order"
+            )
+            .eq("is_active", true)
+            .order("sort_order", {
+              ascending: true,
+            }),
 
-        supabase
-          .from("fish")
-          .select(
-            "id,category_id,name,slug,description,size,origin,price,price_label,availability,image_url,is_featured,is_active,created_at"
-          )
-          .eq("is_active", true)
-          .order("is_featured", { ascending: false })
-          .order("created_at", { ascending: false }),
-      ]);
+          supabase
+            .from("fish")
+            .select(
+              "id,category_id,name,slug,description,size,origin,price,price_label,availability,image_url,is_featured,is_active,created_at"
+            )
+            .eq("is_active", true)
+            .order("created_at", {
+              ascending: false,
+            }),
+        ]);
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
-      if (categoryResult.error || fishResult.error) {
-        console.error(categoryResult.error || fishResult.error);
+      if (
+        categoryResult.error ||
+        fishResult.error
+      ) {
+        console.error(
+          categoryResult.error ||
+            fishResult.error
+        );
+
         setError(
           "We couldn't load the collection right now. Please try again."
         );
+
         setLoading(false);
         return;
       }
 
+      const databaseCategories =
+        categoryResult.data || [];
+
       const categoryMap = Object.fromEntries(
-        (categoryResult.data || []).map((category) => [
+        databaseCategories.map((category) => [
           category.id,
           category,
         ])
       );
 
-      const mappedFish = (fishResult.data || []).map((item) => ({
+      /*
+       * Attach the real category object to every fish.
+       */
+      const mappedFish = (
+        fishResult.data || []
+      ).map((item) => ({
         ...item,
-        categories: categoryMap[item.category_id] || null,
+        categories:
+          categoryMap[item.category_id] || null,
       }));
 
-      const databaseCategories = categoryResult.data || [];
-
+      /*
+       * Order the category buttons exactly as requested.
+       */
       const orderedCategories = [
         ...CATEGORY_ORDER
           .map((name) =>
             databaseCategories.find(
               (category) =>
-                category.name.toLowerCase() === name.toLowerCase()
+                normalizeCategory(
+                  category.name
+                ) === normalizeCategory(name)
             )
           )
           .filter(Boolean),
+
         ...databaseCategories.filter(
           (category) =>
             !CATEGORY_ORDER.some(
               (name) =>
-                name.toLowerCase() === category.name.toLowerCase()
+                normalizeCategory(
+                  category.name
+                ) === normalizeCategory(name)
             )
         ),
       ];
 
+      /*
+       * IMPORTANT:
+       * Order the actual gallery by the CATEGORY NAME,
+       * not by database category ID or database sort_order.
+       */
+      const orderedFish = [...mappedFish].sort(
+        (a, b) => {
+          const aCategory = normalizeCategory(
+            a.categories?.name || a.category
+          );
+
+          const bCategory = normalizeCategory(
+            b.categories?.name || b.category
+          );
+
+          const aPosition =
+            CATEGORY_POSITION.get(
+              aCategory
+            ) ?? 999;
+
+          const bPosition =
+            CATEGORY_POSITION.get(
+              bCategory
+            ) ?? 999;
+
+          /*
+           * Different categories:
+           * follow exact CATEGORY_ORDER.
+           */
+          if (aPosition !== bPosition) {
+            return aPosition - bPosition;
+          }
+
+          /*
+           * Same category:
+           * newest fish first.
+           */
+          return (
+            new Date(
+              b.created_at || 0
+            ).getTime() -
+            new Date(
+              a.created_at || 0
+            ).getTime()
+          );
+        }
+      );
+
       setCategories(orderedCategories);
-      setFish(mappedFish);
+      setFish(orderedFish);
       setLoading(false);
     }
 
@@ -243,18 +340,26 @@ export default function Collection() {
   }, []);
 
   const filteredFish = useMemo(() => {
-    const search = query.trim().toLowerCase();
+    const search = query
+      .trim()
+      .toLowerCase();
 
     return fish.filter((item) => {
-      const categoryName = item.categories?.name || "";
+      const categoryName =
+        item.categories?.name || "";
 
       const matchesCategory =
         activeCategory === "All" ||
-        categoryName.toLowerCase() === activeCategory.toLowerCase();
+        categoryName.toLowerCase() ===
+          activeCategory.toLowerCase();
 
-      if (!matchesCategory) return false;
+      if (!matchesCategory) {
+        return false;
+      }
 
-      if (!search) return true;
+      if (!search) {
+        return true;
+      }
 
       const searchableText = [
         item.name,
@@ -279,8 +384,10 @@ export default function Collection() {
     categories.forEach((category) => {
       counts[category.name] = fish.filter(
         (item) =>
-          item.categories?.name?.toLowerCase() ===
-          category.name.toLowerCase()
+          normalizeCategory(
+            item.categories?.name
+          ) ===
+          normalizeCategory(category.name)
       ).length;
     });
 
@@ -309,9 +416,10 @@ export default function Collection() {
             </div>
 
             <p>
-              A carefully selected collection of premium fish and
-              aquatic life. Explore by category or search directly
-              for the specimen you are looking for.
+              A carefully selected collection of
+              premium fish and aquatic life. Explore
+              by category or search directly for the
+              specimen you are looking for.
             </p>
           </div>
 
@@ -324,7 +432,9 @@ export default function Collection() {
                     ? "category-pill active"
                     : "category-pill"
                 }
-                onClick={() => setActiveCategory("All")}
+                onClick={() =>
+                  setActiveCategory("All")
+                }
               >
                 All
                 <span>{fish.length}</span>
@@ -335,17 +445,25 @@ export default function Collection() {
                   type="button"
                   key={category.id}
                   className={
-                    activeCategory === category.name
+                    activeCategory ===
+                    category.name
                       ? "category-pill active"
                       : "category-pill"
                   }
                   onClick={() => {
-                    setActiveCategory(category.name);
+                    setActiveCategory(
+                      category.name
+                    );
                     setQuery("");
                   }}
                 >
                   {category.name}
-                  <span>{categoryCounts[category.name] || 0}</span>
+
+                  <span>
+                    {categoryCounts[
+                      category.name
+                    ] || 0}
+                  </span>
                 </button>
               ))}
             </div>
@@ -357,7 +475,11 @@ export default function Collection() {
                 <input
                   type="search"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) =>
+                    setQuery(
+                      event.target.value
+                    )
+                  }
                   placeholder="Search fish, category, size..."
                   aria-label="Search fish"
                 />
@@ -365,7 +487,9 @@ export default function Collection() {
                 {query && (
                   <button
                     type="button"
-                    onClick={() => setQuery("")}
+                    onClick={() =>
+                      setQuery("")
+                    }
                     aria-label="Clear search"
                   >
                     <X size={17} />
@@ -377,6 +501,7 @@ export default function Collection() {
                 <span>
                   {filteredFish.length}
                 </span>
+
                 {filteredFish.length === 1
                   ? " specimen"
                   : " specimens"}
@@ -390,8 +515,12 @@ export default function Collection() {
         <div className="collection-container">
           {loading ? (
             <div className="collection-grid">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <SkeletonCard key={index} />
+              {Array.from({
+                length: 8,
+              }).map((_, index) => (
+                <SkeletonCard
+                  key={index}
+                />
               ))}
             </div>
           ) : error ? (
@@ -400,13 +529,17 @@ export default function Collection() {
                 COLLECTION
               </span>
 
-              <h2>Unable to load the collection.</h2>
+              <h2>
+                Unable to load the collection.
+              </h2>
 
               <p>{error}</p>
 
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={() =>
+                  window.location.reload()
+                }
               >
                 Try again
               </button>
@@ -417,11 +550,13 @@ export default function Collection() {
                 NO RESULTS
               </span>
 
-              <h2>No specimens found.</h2>
+              <h2>
+                No specimens found.
+              </h2>
 
               <p>
-                Try another search or browse a different
-                category.
+                Try another search or browse a
+                different category.
               </p>
 
               <button
@@ -434,7 +569,10 @@ export default function Collection() {
           ) : (
             <div className="collection-grid">
               {filteredFish.map((item) => (
-                <FishCard key={item.id} fish={item} />
+                <FishCard
+                  key={item.id}
+                  fish={item}
+                />
               ))}
             </div>
           )}
