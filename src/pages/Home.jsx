@@ -39,8 +39,8 @@ export default function Home() {
       {/* 1. HERO */}
       <section className="hero-exact" id="home">
         <img
-          src="/aquaabark-hero.jpg"
-          alt="AquaaBark Premium Aquarium Store — Exotic Fish Premium Collection"
+          src="/rebel_background.png"
+          alt="Rebel Pets — Imported Premium Betta Breeding Pairs"
           className="hero-background"
         />
 
@@ -48,19 +48,19 @@ export default function Home() {
           id="hero-explore-button"
           className="hero-explore-button"
           onClick={handleExplore}
-          aria-label="Explore Collection"
+          aria-label="Explore Imported Betta Breeding Pairs"
         >
           <span>Explore Collection</span>
           <span className="hero-explore-arrow">→</span>
         </button>
       </section>
 
-      {/* 2. COLLECTION */}
+      {/* 2. BETTA COLLECTION */}
       <section id="fish-collection">
         <Collection />
       </section>
 
-      {/* 3. VISIT AQUAABARK */}
+      {/* 3. VISIT */}
       <section id="visit-section">
         <Visit />
       </section>

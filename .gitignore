@@ -5,3 +5,4 @@ live-backup/
 .env
 .env.*
 !.env.example
+.firebase/

@@ -1,9 +1,10 @@
 import "./visit.css";
 
-const MAP_URL = "https://maps.app.goo.gl/4J5snstRWTvMWBe3A";
-const WHATSAPP = "https://wa.me/918121637269";
-const YOUTUBE = "https://youtu.be/OXWMIhZqvjU?si=CY7SP7h3OqHLSYuI";
-const INSTAGRAM = "https://www.instagram.com/aquaa_bark_telugu/";
+const MAP_URL = "https://maps.app.goo.gl/pT8Wf6ptfnSHg2J38";
+const WHATSAPP = "https://wa.me/919384719311";
+const YOUTUBE = "https://youtube.com/@rebelpets5121?si=NVx5cArb57hhqAsC";
+const INSTAGRAM =
+  "https://www.instagram.com/rebel_bettas_171?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw==";
 
 export default function Visit() {
   return (
@@ -11,37 +12,37 @@ export default function Visit() {
       <section className="visit-hero">
         <div className="visit-container">
           <div className="visit-copy">
-            <p className="visit-eyebrow">AQUAABARK · HYDERABAD</p>
+            <p className="visit-eyebrow">REBAL PETS · THIRUCHENDUR</p>
 
             <h1>
-              Come closer to
+              Discover
               <br />
-              <em>aquatic life.</em>
+              <em>premium Bettas.</em>
             </h1>
 
             <p className="visit-intro">
-              AquaaBark is a premium aquarium destination built around
-              extraordinary aquatic life, carefully selected specimens and a
-              genuine passion for the hobby.
+              Rebal Pets specialises in imported premium Betta breeding pairs,
+              with a focus on rare varieties, distinctive colours and quality
+              breeding stock for Betta enthusiasts.
             </p>
 
             <div className="visit-details">
               <div className="visit-detail">
-                <span className="visit-label">ONLINE STORE</span>
-                <strong>10:30 AM — 8:00 PM</strong>
-                <small>Daily online enquiries</small>
+                <span className="visit-label">SPECIALITY</span>
+                <strong>Imported Premium Bettas</strong>
+                <small>Breeding pairs only</small>
               </div>
 
               <div className="visit-detail">
-                <span className="visit-label">PUBLIC VISITS</span>
-                <strong>Saturday · 3:30 PM — 8:00 PM</strong>
-                <small>Public visits are available every Saturday</small>
+                <span className="visit-label">LOCATION</span>
+                <strong>Thiruchendur</strong>
+                <small>Visit through the location link below</small>
               </div>
 
               <div className="visit-detail">
                 <span className="visit-label">WHATSAPP</span>
-                <strong>81216 37269</strong>
-                <small>WhatsApp enquiries only</small>
+                <strong>93847 19311</strong>
+                <small>For Betta availability & enquiries</small>
               </div>
             </div>
 
@@ -90,20 +91,21 @@ export default function Visit() {
             <div className="visit-video-card">
               <div className="visit-video-top">
                 <span>FEATURED VIDEO</span>
-                <span>AQUAABARK</span>
+                <span>REBAL PETS</span>
               </div>
 
               <div className="visit-video">
                 <iframe
-                  src="https://www.youtube.com/embed/OXWMIhZqvjU"
-                  title="AquaaBark YouTube Video"
+                  src="https://www.youtube.com/embed/LPctBS38Tqg"
+                  title="Rebal Pets Featured Video"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
               </div>
 
               <div className="visit-video-bottom">
-                <span>AquaaBark Telugu</span>
+                <span>Rebal Pets · 25.9K+ Subscribers</span>
+
                 <a
                   href={YOUTUBE}
                   target="_blank"

@@ -4,37 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { site } from "../data/site";
 
-const CATEGORY_ORDER = [
-  "Premium Flowerhorns",
-  "Flowerhorns",
-  "Imported Bettas",
-  "Imported Guppies",
-  "Snakehead Fish (Channa)",
-  "Imported Mollies",
-  "Discus Fish",
-  "Marine Fish",
-  "Shrimps",
-  "Arowanas",
-  "Polar Parrots",
-  "Aquatic Plants",
-  "Live Cultures",
-  "Others",
-];
-
-function normalizeCategory(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
-
-const CATEGORY_POSITION = new Map(
-  CATEGORY_ORDER.map((name, index) => [
-    normalizeCategory(name),
-    index,
-  ])
-);
-
 function formatPrice(price) {
   if (price === null || price === undefined || price === "") {
     return "Price on enquiry";
@@ -61,7 +30,7 @@ function isSold(fish) {
 
 function whatsappUrl(fish) {
   const message = [
-    "Hello AquaaBark,",
+    "Hello,",
     "",
     `I am interested in ${fish.name}.`,
     fish.price ? `Price: ${formatPrice(fish.price)}` : "",
@@ -95,7 +64,7 @@ function FishCard({ fish }) {
           />
         ) : (
           <div className="collection-image-placeholder">
-            <span>AQUAABARK</span>
+            <span>REBEL PETS</span>
           </div>
         )}
 
@@ -111,13 +80,9 @@ function FishCard({ fish }) {
 
       <div className="collection-card-content">
         <div className="collection-card-top">
-          <span>
-            {fish.categories?.name ||
-              fish.category ||
-              "Aquatic Life"}
-          </span>
+          <span>Imported Betta</span>
 
-          <span>{fish.size || ""}</span>
+          <span>{fish.size || "Breeding Pair"}</span>
         </div>
 
         <h3>{fish.name}</h3>
@@ -164,8 +129,6 @@ function SkeletonCard() {
 
 export default function Collection() {
   const [fish, setFish] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [activeCategory, setActiveCategory] = useState("All");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -188,147 +151,32 @@ export default function Collection() {
         return;
       }
 
-      const [categoryResult, fishResult] =
-        await Promise.all([
-          supabase
-            .from("categories")
-            .select(
-              "id,slug,name,is_active,sort_order"
-            )
-            .eq("is_active", true)
-            .order("sort_order", {
-              ascending: true,
-            }),
-
-          supabase
-            .from("fish")
-            .select(
-              "id,category_id,name,slug,description,size,origin,price,price_label,availability,image_url,is_featured,is_active,created_at"
-            )
-            .eq("is_active", true)
-            .order("created_at", {
-              ascending: false,
-            }),
-        ]);
+      const { data, error: fishError } = await supabase
+        .from("fish")
+        .select(
+          "id,name,slug,description,size,origin,price,price_label,availability,image_url,is_featured,is_active,created_at"
+        )
+        .eq("is_active", true)
+        .order("created_at", {
+          ascending: false,
+        });
 
       if (!mounted) {
         return;
       }
 
-      if (
-        categoryResult.error ||
-        fishResult.error
-      ) {
-        console.error(
-          categoryResult.error ||
-            fishResult.error
-        );
+      if (fishError) {
+        console.error(fishError);
 
         setError(
-          "We couldn't load the collection right now. Please try again."
+          "We couldn't load the Betta collection right now. Please try again."
         );
 
         setLoading(false);
         return;
       }
 
-      const databaseCategories =
-        categoryResult.data || [];
-
-      const categoryMap = Object.fromEntries(
-        databaseCategories.map((category) => [
-          category.id,
-          category,
-        ])
-      );
-
-      /*
-       * Attach the real category object to every fish.
-       */
-      const mappedFish = (
-        fishResult.data || []
-      ).map((item) => ({
-        ...item,
-        categories:
-          categoryMap[item.category_id] || null,
-      }));
-
-      /*
-       * Order the category buttons exactly as requested.
-       */
-      const orderedCategories = [
-        ...CATEGORY_ORDER
-          .map((name) =>
-            databaseCategories.find(
-              (category) =>
-                normalizeCategory(
-                  category.name
-                ) === normalizeCategory(name)
-            )
-          )
-          .filter(Boolean),
-
-        ...databaseCategories.filter(
-          (category) =>
-            !CATEGORY_ORDER.some(
-              (name) =>
-                normalizeCategory(
-                  category.name
-                ) === normalizeCategory(name)
-            )
-        ),
-      ];
-
-      /*
-       * IMPORTANT:
-       * Order the actual gallery by the CATEGORY NAME,
-       * not by database category ID or database sort_order.
-       */
-      const orderedFish = [...mappedFish].sort(
-        (a, b) => {
-          const aCategory = normalizeCategory(
-            a.categories?.name || a.category
-          );
-
-          const bCategory = normalizeCategory(
-            b.categories?.name || b.category
-          );
-
-          const aPosition =
-            CATEGORY_POSITION.get(
-              aCategory
-            ) ?? 999;
-
-          const bPosition =
-            CATEGORY_POSITION.get(
-              bCategory
-            ) ?? 999;
-
-          /*
-           * Different categories:
-           * follow exact CATEGORY_ORDER.
-           */
-          if (aPosition !== bPosition) {
-            return aPosition - bPosition;
-          }
-
-          /*
-           * Same category:
-           * newest fish first.
-           */
-          return (
-            new Date(
-              b.created_at || 0
-            ).getTime() -
-            new Date(
-              a.created_at || 0
-            ).getTime()
-          );
-        }
-      );
-
-      setCategories(orderedCategories);
-      setFish(orderedFish);
+      setFish(data || []);
       setLoading(false);
     }
 
@@ -339,36 +187,33 @@ export default function Collection() {
     };
   }, []);
 
+  /*
+   * Real-time client-side search.
+   *
+   * Searches through all useful product fields so customers
+   * can find a Betta by variety, name, origin, description,
+   * size, availability or price label.
+   */
   const filteredFish = useMemo(() => {
-    const search = query
-      .trim()
-      .toLowerCase();
+    const search = query.trim().toLowerCase();
+
+    if (!search) {
+      return fish;
+    }
 
     return fish.filter((item) => {
-      const categoryName =
-        item.categories?.name || "";
-
-      const matchesCategory =
-        activeCategory === "All" ||
-        categoryName.toLowerCase() ===
-          activeCategory.toLowerCase();
-
-      if (!matchesCategory) {
-        return false;
-      }
-
-      if (!search) {
-        return true;
-      }
-
       const searchableText = [
         item.name,
-        categoryName,
+        item.slug,
         item.description,
         item.size,
         item.origin,
         item.price_label,
         item.availability,
+        "betta",
+        "breeding pair",
+        "imported betta",
+        "imported breeding pair",
       ]
         .filter(Boolean)
         .join(" ")
@@ -376,26 +221,9 @@ export default function Collection() {
 
       return searchableText.includes(search);
     });
-  }, [fish, activeCategory, query]);
+  }, [fish, query]);
 
-  const categoryCounts = useMemo(() => {
-    const counts = {};
-
-    categories.forEach((category) => {
-      counts[category.name] = fish.filter(
-        (item) =>
-          normalizeCategory(
-            item.categories?.name
-          ) ===
-          normalizeCategory(category.name)
-      ).length;
-    });
-
-    return counts;
-  }, [categories, fish]);
-
-  const clearFilters = () => {
-    setActiveCategory("All");
+  const clearSearch = () => {
     setQuery("");
   };
 
@@ -406,20 +234,18 @@ export default function Collection() {
           <div className="collection-heading">
             <div>
               <span className="collection-eyebrow">
-                AQUAABARK COLLECTION
+                REBEL PETS COLLECTION
               </span>
 
               <h1>
-                Discover the{" "}
-                <em>collection.</em>
+                Imported <em>Betta breeding pairs.</em>
               </h1>
             </div>
 
             <p>
-              A carefully selected collection of
-              premium fish and aquatic life. Explore
-              by category or search directly for the
-              specimen you are looking for.
+              Explore our collection of imported rare Betta
+              breeding pairs. Search by variety, colour,
+              pattern, type or any other available detail.
             </p>
           </div>
 
@@ -427,45 +253,11 @@ export default function Collection() {
             <div className="category-filter">
               <button
                 type="button"
-                className={
-                  activeCategory === "All"
-                    ? "category-pill active"
-                    : "category-pill"
-                }
-                onClick={() =>
-                  setActiveCategory("All")
-                }
+                className="category-pill active"
               >
-                All
+                Imported Premium Bettas
                 <span>{fish.length}</span>
               </button>
-
-              {categories.map((category) => (
-                <button
-                  type="button"
-                  key={category.id}
-                  className={
-                    activeCategory ===
-                    category.name
-                      ? "category-pill active"
-                      : "category-pill"
-                  }
-                  onClick={() => {
-                    setActiveCategory(
-                      category.name
-                    );
-                    setQuery("");
-                  }}
-                >
-                  {category.name}
-
-                  <span>
-                    {categoryCounts[
-                      category.name
-                    ] || 0}
-                  </span>
-                </button>
-              ))}
             </div>
 
             <div className="collection-search-row">
@@ -476,20 +268,16 @@ export default function Collection() {
                   type="search"
                   value={query}
                   onChange={(event) =>
-                    setQuery(
-                      event.target.value
-                    )
+                    setQuery(event.target.value)
                   }
-                  placeholder="Search fish, category, size..."
-                  aria-label="Search fish"
+                  placeholder="Search Betta varieties, names, patterns..."
+                  aria-label="Search imported Betta breeding pairs"
                 />
 
                 {query && (
                   <button
                     type="button"
-                    onClick={() =>
-                      setQuery("")
-                    }
+                    onClick={clearSearch}
                     aria-label="Clear search"
                   >
                     <X size={17} />
@@ -498,13 +286,11 @@ export default function Collection() {
               </div>
 
               <div className="collection-result-count">
-                <span>
-                  {filteredFish.length}
-                </span>
+                <span>{filteredFish.length}</span>
 
                 {filteredFish.length === 1
-                  ? " specimen"
-                  : " specimens"}
+                  ? " breeding pair"
+                  : " breeding pairs"}
               </div>
             </div>
           </div>
@@ -515,12 +301,8 @@ export default function Collection() {
         <div className="collection-container">
           {loading ? (
             <div className="collection-grid">
-              {Array.from({
-                length: 8,
-              }).map((_, index) => (
-                <SkeletonCard
-                  key={index}
-                />
+              {Array.from({ length: 8 }).map((_, index) => (
+                <SkeletonCard key={index} />
               ))}
             </div>
           ) : error ? (
@@ -530,16 +312,14 @@ export default function Collection() {
               </span>
 
               <h2>
-                Unable to load the collection.
+                Unable to load the Betta collection.
               </h2>
 
               <p>{error}</p>
 
               <button
                 type="button"
-                onClick={() =>
-                  window.location.reload()
-                }
+                onClick={() => window.location.reload()}
               >
                 Try again
               </button>
@@ -551,19 +331,18 @@ export default function Collection() {
               </span>
 
               <h2>
-                No specimens found.
+                No Betta breeding pairs found.
               </h2>
 
               <p>
-                Try another search or browse a
-                different category.
+                Try another variety, pattern or Betta name.
               </p>
 
               <button
                 type="button"
-                onClick={clearFilters}
+                onClick={clearSearch}
               >
-                View all specimens
+                View all Bettas
               </button>
             </div>
           ) : (
