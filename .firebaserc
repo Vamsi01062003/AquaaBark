@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "production": "rebalpets-bettas",
+    "default": "rebalpets-bettas"
+  },
+  "targets": {},
+  "etags": {}
+}
