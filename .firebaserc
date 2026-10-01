@@ -1,7 +1,6 @@
 {
   "projects": {
-    "production": "rebalpets-bettas",
-    "default": "rebalpets-bettas"
+    "production": "rebelpetstore"
   },
   "targets": {},
   "etags": {}
