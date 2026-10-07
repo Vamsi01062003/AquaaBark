@@ -1,956 +1,269 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
-const STORAGE_BUCKET = "aquaa-bark-images";
+
+const STORAGE_BUCKET = "mr.aquaticvizag";
+
+const DEFAULT_CATEGORIES = [
+  {
+    name: "Imported Bettas",
+    slug: "imported-bettas",
+    sort_order: 1,
+  },
+  {
+    name: "Bettas",
+    slug: "bettas",
+    sort_order: 2,
+  },
+  {
+    name: "Guppies",
+    slug: "guppies",
+    sort_order: 3,
+  },
+  {
+    name: "Arwanas",
+    slug: "arwanas",
+    sort_order: 4,
+  },
+  {
+    name: "Flowerhorns",
+    slug: "flowerhorns",
+    sort_order: 5,
+  },
+  {
+    name: "Alligator ghar",
+    slug: "alligator-ghar",
+    sort_order: 6,
+  },
+  {
+    name: "Imported Mollies",
+    slug: "imported-mollies",
+    sort_order: 7,
+  },
+  {
+    name: "Koi's",
+    slug: "kois",
+    sort_order: 8,
+  },
+  {
+    name: "Albino plecos",
+    slug: "albino-plecos",
+    sort_order: 9,
+  },
+  {
+    name: "Polar Parrots pair",
+    slug: "polar-parrots-pair",
+    sort_order: 10,
+  },
+  {
+    name: "Green veltail zebras",
+    slug: "green-veltail-zebras",
+    sort_order: 11,
+  },
+  {
+    name: "Tiger Barbs",
+    slug: "tiger-barbs",
+    sort_order: 12,
+  },
+  {
+    name: "Tetras",
+    slug: "tetras",
+    sort_order: 13,
+  },
+  {
+    name: "Shrimp",
+    slug: "shrimp",
+    sort_order: 14,
+  },
+  {
+    name: "Other",
+    slug: "other",
+    sort_order: 15,
+  },
+  {
+    name: "Plants",
+    slug: "plants",
+    sort_order: 16,
+  },
+];
+
 const EMPTY_FISH = {
   id: null,
   name: "",
-  category_id: "",
+  category: "",
   price: "",
-  price_label: "",
   description: "",
-  size: "",
-  origin: "",
-  availability: "Available",
+  stock: 1,
   image_url: "",
-  is_featured: false,
-  is_active: true,
 };
+
 const EMPTY_CATEGORY = {
   id: null,
   name: "",
   slug: "",
   image_url: "",
-  sort_order: 0,
-  is_active: true,
 };
-export default function Admin() {
-  const [session, setSession] = useState(null);
-  const [admin, setAdmin] = useState(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [fish, setFish] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [activeSection, setActiveSection] = useState("dashboard");
-  const [fishSearch, setFishSearch] = useState("");
-  const [fishCategoryFilter, setFishCategoryFilter] = useState("all");
-  const [categorySearch, setCategorySearch] = useState("");
-  const [showFishModal, setShowFishModal] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [fishForm, setFishForm] = useState(EMPTY_FISH);
-  const [categoryForm, setCategoryForm] = useState(EMPTY_CATEGORY);
-  const [fishImageFile, setFishImageFile] = useState(null);
-  const [categoryImageFile, setCategoryImageFile] = useState(null);
-  const [uploadingFishImage, setUploadingFishImage] = useState(false);
-  const [uploadingCategoryImage, setUploadingCategoryImage] = useState(false);
-  useEffect(() => {
-    checkAuthentication();
-    const authListener = supabase.auth.onAuthStateChange(function (
-      event,
-      currentSession
-    ) {
-      setSession(currentSession);
-      if (!currentSession) {
-        setAdmin(null);
-        setCheckingAuth(false);
-      }
-    });
-    return function () {
-      authListener.data.subscription.unsubscribe();
-    };
-  }, []);
-  useEffect(() => {
-    if (!session) return;
-    loadAdmin();
-    const fishChannel = supabase
-      .channel("admin-fish-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "fish",
-        },
-        function () {
-          loadFish();
-        }
-      )
-      .subscribe();
-    const categoryChannel = supabase
-      .channel("admin-category-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "categories",
-        },
-        function () {
-          loadCategories();
-        }
-      )
-      .subscribe();
-    return function () {
-      supabase.removeChannel(fishChannel);
-      supabase.removeChannel(categoryChannel);
-    };
-  }, [session]);
-  async function checkAuthentication() {
-    try {
-      const result = await supabase.auth.getSession();
-      if (result.error) {
-        throw result.error;
-      }
-      setSession(result.data.session);
-      if (!result.data.session) {
-        setCheckingAuth(false);
-        return;
-      }
-      await loadAdmin(result.data.session.user.id);
-    } catch (err) {
-      setError(err.message || "Authentication error");
-    } finally {
-      setCheckingAuth(false);
-    }
-  }
-  async function loadAdmin(userId) {
-    try {
-      const currentUserId =
-        userId || session?.user?.id || (await supabase.auth.getUser()).data.user
-          ?.id;
-      if (!currentUserId) return;
-      const result = await supabase
-        .from("admins")
-        .select("id,email,name,is_active")
-        .eq("id", currentUserId)
-        .maybeSingle();
-      if (result.error) {
-        throw result.error;
-      }
-      if (!result.data || !result.data.is_active) {
-        await supabase.auth.signOut();
-        setError("You are not authorized to access the admin panel.");
-        return;
-      }
-      setAdmin(result.data);
-      await Promise.all([loadFish(), loadCategories()]);
-    } catch (err) {
-      setError(err.message || "Unable to load admin account.");
-    }
-  }
-  async function loadFish() {
-    const result = await supabase
-      .from("fish")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!result.error) {
-      setFish(result.data || []);
-    }
-  }
-  async function loadCategories() {
-    const result = await supabase
-      .from("categories")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("name", { ascending: true });
-    if (!result.error) {
-      setCategories(result.data || []);
-    }
-  }
-  function notify(text) {
-    setMessage(text);
-    setError("");
-    window.setTimeout(function () {
-      setMessage("");
-    }, 3500);
-  }
-  function notifyError(text) {
-    setError(text);
-    setMessage("");
-    window.setTimeout(function () {
-      setError("");
-    }, 5000);
-  }
-  function categoryName(categoryId) {
-    const category = categories.find(function (item) {
-      return item.id === categoryId;
-    });
-    return category ? category.name : "Uncategorized";
-  }
-  const filteredFish = useMemo(
-    function () {
-      const search = fishSearch.trim().toLowerCase();
-      return fish.filter(function (item) {
-        const matchesSearch =
-          !search ||
-          String(item.name || "").toLowerCase().includes(search) ||
-          String(item.description || "").toLowerCase().includes(search) ||
-          String(item.origin || "").toLowerCase().includes(search);
-        const matchesCategory =
-          fishCategoryFilter === "all" ||
-          item.category_id === fishCategoryFilter;
-        return matchesSearch && matchesCategory;
-      });
-    },
-    [fish, fishSearch, fishCategoryFilter]
-  );
-  const filteredCategories = useMemo(
-    function () {
-      const search = categorySearch.trim().toLowerCase();
-      return categories.filter(function (item) {
-        return (
-          !search ||
-          String(item.name || "").toLowerCase().includes(search) ||
-          String(item.slug || "").toLowerCase().includes(search)
-        );
-      });
-    },
-    [categories, categorySearch]
-  );
-  const activeFishCount = fish.filter(function (item) {
-    return item.is_active;
-  }).length;
-  const featuredFishCount = fish.filter(function (item) {
-    return item.is_featured && item.is_active;
-  }).length;
-  const activeCategoryCount = categories.filter(function (item) {
-    return item.is_active;
-  }).length;
-  function openNewFish() {
-    setFishForm(EMPTY_FISH);
-    setFishImageFile(null);
-    setShowFishModal(true);
-  }
-  function openEditFish(item) {
-    setFishForm({
-      id: item.id,
-      name: item.name || "",
-      category_id: item.category_id || "",
-      price: item.price ?? "",
-      price_label: item.price_label || "",
-      description: item.description || "",
-      size: item.size || "",
-      origin: item.origin || "",
-      availability: item.availability || "Available",
-      image_url: item.image_url || "",
-      is_featured: Boolean(item.is_featured),
-      is_active: Boolean(item.is_active),
-    });
-    setFishImageFile(null);
-    setShowFishModal(true);
-  }
-  function openNewCategory() {
-    setCategoryForm({
-      ...EMPTY_CATEGORY,
-      sort_order: categories.length + 1,
-    });
-    setCategoryImageFile(null);
-    setShowCategoryModal(true);
-  }
-  function openEditCategory(item) {
-    setCategoryForm({
-      id: item.id,
-      name: item.name || "",
-      slug: item.slug || "",
-      image_url: item.image_url || "",
-      sort_order: item.sort_order ?? 0,
-      is_active: Boolean(item.is_active),
-    });
-    setCategoryImageFile(null);
-    setShowCategoryModal(true);
-  }
-  function makeSlug(name) {
-    return String(name || "")
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  }
-  async function uploadImage(file, folder) {
-    if (!file) return null;
-    const extension =
-      file.name.indexOf(".") >= 0
-        ? file.name.split(".").pop().toLowerCase()
-        : "jpg";
-    const fileName =
-      Date.now() +
-      "-" +
-      Math.random().toString(36).slice(2) +
-      "." +
-      extension;
-    const filePath = folder + "/" + fileName;
-    const uploadResult = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-    if (uploadResult.error) {
-      throw uploadResult.error;
-    }
-    const publicResult = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(filePath);
-    return publicResult.data.publicUrl;
-  }
-  async function saveFish(event) {
-    event.preventDefault();
-    if (!fishForm.name.trim()) {
-      notifyError("Fish name is required.");
-      return;
-    }
-    setLoading(true);
-    try {
-      let imageUrl = fishForm.image_url || "";
-      if (fishImageFile) {
-        setUploadingFishImage(true);
-        imageUrl = await uploadImage(fishImageFile, "fish");
-        setUploadingFishImage(false);
-      }
-      const payload = {
-        name: fishForm.name.trim(),
-        category_id: fishForm.category_id || null,
-        price: fishForm.price === "" ? null : Number(fishForm.price),
-        price_label: fishForm.price_label.trim() || null,
-        description: fishForm.description.trim() || null,
-        size: fishForm.size.trim() || null,
-        origin: fishForm.origin.trim() || null,
-        availability: fishForm.availability || "Available",
-        image_url: imageUrl || null,
-        is_featured: Boolean(fishForm.is_featured),
-        is_active: Boolean(fishForm.is_active),
-      };
-      let result;
-      if (fishForm.id) {
-        result = await supabase
-          .from("fish")
-          .update(payload)
-          .eq("id", fishForm.id);
-      } else {
-        result = await supabase.from("fish").insert(payload);
-      }
-      if (result.error) {
-        throw result.error;
-      }
-      setShowFishModal(false);
-      setFishImageFile(null);
-      await loadFish();
-      notify(fishForm.id ? "Fish updated successfully." : "Fish added successfully.");
-    } catch (err) {
-      setUploadingFishImage(false);
-      notifyError(err.message || "Unable to save fish.");
-    } finally {
-      setLoading(false);
-    }
-  }
-  async function deleteFish(item) {
-    const confirmed = window.confirm(
-      "Delete " + item.name + "? This cannot be undone."
-    );
-    if (!confirmed) return;
-    setLoading(true);
-    try {
-      const result = await supabase.from("fish").delete().eq("id", item.id);
-      if (result.error) {
-        throw result.error;
-      }
-      await loadFish();
-      notify("Fish deleted successfully.");
-    } catch (err) {
-      notifyError(err.message || "Unable to delete fish.");
-    } finally {
-      setLoading(false);
-    }
-  }
-  async function saveCategory(event) {
-    event.preventDefault();
-    if (!categoryForm.name.trim()) {
-      notifyError("Category name is required.");
-      return;
-    }
-    setLoading(true);
-    try {
-      let imageUrl = categoryForm.image_url || "";
-      if (categoryImageFile) {
-        setUploadingCategoryImage(true);
-        imageUrl = await uploadImage(categoryImageFile, "categories");
-        setUploadingCategoryImage(false);
-      }
-      const payload = {
-        name: categoryForm.name.trim(),
-        slug:
-          categoryForm.slug.trim() ||
-          makeSlug(categoryForm.name),
-        image_url: imageUrl || null,
-        sort_order: Number(categoryForm.sort_order) || 0,
-        is_active: Boolean(categoryForm.is_active),
-      };
-      let result;
-      if (categoryForm.id) {
-        result = await supabase
-          .from("categories")
-          .update(payload)
-          .eq("id", categoryForm.id);
-      } else {
-        result = await supabase.from("categories").insert(payload);
-      }
-      if (result.error) {
-        throw result.error;
-      }
-      setShowCategoryModal(false);
-      setCategoryImageFile(null);
-      await loadCategories();
-      notify(
-        categoryForm.id
-          ? "Category updated successfully."
-          : "Category added successfully."
-      );
-    } catch (err) {
-      setUploadingCategoryImage(false);
-      notifyError(err.message || "Unable to save category.");
-    } finally {
-      setLoading(false);
-    }
-  }
-  async function deleteCategory(item) {
-    const confirmed = window.confirm(
-      "Delete " +
-        item.name +
-        "?\n\nFish assigned to this category will become uncategorized."
-    );
-    if (!confirmed) return;
-    setLoading(true);
-    try {
-      const result = await supabase
-        .from("categories")
-        .delete()
-        .eq("id", item.id);
-      if (result.error) {
-        throw result.error;
-      }
-      await Promise.all([loadCategories(), loadFish()]);
-      notify("Category deleted successfully.");
-    } catch (err) {
-      notifyError(err.message || "Unable to delete category.");
-    } finally {
-      setLoading(false);
-    }
-  }
-  async function logout() {
-    await supabase.auth.signOut();
-  }
-  if (checkingAuth) {
-    return (
-      <div style={styles.centerScreen}>
-        <div style={styles.loadingBox}>Checking admin access...</div>
-      </div>
-    );
-  }
-  if (!session || !admin) {
-    return (
-      <LoginScreen
-        onLogin={function (newSession) {
-          setSession(newSession);
-        }}
-      />
-    );
-  }
-  return (
-    <div style={styles.app}>
-      <header style={styles.topbar}>
-        <div>
-          <div style={styles.brand}>AquaaBark</div>
-          <div style={styles.brandSub}>Admin Dashboard</div>
-        </div>
-        <div style={styles.topActions}>
-          <button
-            style={styles.websiteButton}
-            onClick={function () {
-              window.location.href = "/";
-            }}
-          >
-            View Website
-          </button>
-          <button style={styles.logoutButton} onClick={logout}>
-            Logout
-          </button>
-        </div>
-      </header>
-      <div style={styles.layout}>
-        <aside style={styles.sidebar}>
-          <div style={styles.adminBox}>
-            <div style={styles.avatar}>
-              {(admin.name || "A").charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <strong>{admin.name || "Admin"}</strong>
-              <span>{admin.email}</span>
-            </div>
-          </div>
-          <nav style={styles.nav}>
-            <NavButton
-              active={activeSection === "dashboard"}
-              onClick={function () {
-                setActiveSection("dashboard");
-              }}
-            >
-              Dashboard
-            </NavButton>
-            <NavButton
-              active={activeSection === "fish"}
-              onClick={function () {
-                setActiveSection("fish");
-              }}
-            >
-              Fish Management
-            </NavButton>
-            <NavButton
-              active={activeSection === "categories"}
-              onClick={function () {
-                setActiveSection("categories");
-              }}
-            >
-              Categories
-            </NavButton>
-            <NavButton
-              active={activeSection === "storage"}
-              onClick={function () {
-                setActiveSection("storage");
-              }}
-            >
-              Image Storage
-            </NavButton>
-          </nav>
-        </aside>
-        <main style={styles.main}>
-          {message && <div style={styles.success}>{message}</div>}
-          {error && <div style={styles.error}>{error}</div>}
-          {activeSection === "dashboard" && (
-            <Dashboard
-              fish={fish}
-              categories={categories}
-              activeFishCount={activeFishCount}
-              featuredFishCount={featuredFishCount}
-              activeCategoryCount={activeCategoryCount}
-              onFish={function () {
-                setActiveSection("fish");
-              }}
-              onCategory={function () {
-                setActiveSection("categories");
-              }}
-              onAddFish={openNewFish}
-              onAddCategory={openNewCategory}
-            />
-          )}
-          {activeSection === "fish" && (
-            <FishManagement
-              fish={filteredFish}
-              categories={categories}
-              search={fishSearch}
-              setSearch={setFishSearch}
-              categoryFilter={fishCategoryFilter}
-              setCategoryFilter={setFishCategoryFilter}
-              onAdd={openNewFish}
-              onEdit={openEditFish}
-              onDelete={deleteFish}
-            />
-          )}
-          {activeSection === "categories" && (
-            <CategoryManagement
-              categories={filteredCategories}
-              search={categorySearch}
-              setSearch={setCategorySearch}
-              onAdd={openNewCategory}
-              onEdit={openEditCategory}
-              onDelete={deleteCategory}
-            />
-          )}
-          {activeSection === "storage" && (
-            <StorageView fish={fish} categories={categories} />
-          )}
-        </main>
-      </div>
-      {showFishModal && (
-        <Modal
-          title={fishForm.id ? "Edit Fish" : "Add New Fish"}
-          onClose={function () {
-            if (!loading) setShowFishModal(false);
-          }}
-        >
-          <form onSubmit={saveFish}>
-            <div style={styles.formGrid}>
-              <Field label="Fish Name *">
-                <input
-                  style={styles.input}
-                  value={fishForm.name}
-                  onChange={function (e) {
-                    setFishForm({
-                      ...fishForm,
-                      name: e.target.value,
-                    });
-                  }}
-                  placeholder="Premium Flowerhorn"
-                />
-              </Field>
-              <Field label="Category">
-                <select
-                  style={styles.input}
-                  value={fishForm.category_id}
-                  onChange={function (e) {
-                    setFishForm({
-                      ...fishForm,
-                      category_id: e.target.value,
-                    });
-                  }}
-                >
-                  <option value="">Select category</option>
-                  {categories.map(function (category) {
-                    return (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    );
-                  })}
-                </select>
-              </Field>
-              <Field label="Price">
-                <input
-                  style={styles.input}
-                  type="number"
-                  min="0"
-                  value={fishForm.price}
-                  onChange={function (e) {
-                    setFishForm({
-                      ...fishForm,
-                      price: e.target.value,
-                    });
-                  }}
-                  placeholder="5000"
-                />
-              </Field>
-              <Field label="Price Label">
-                <input
-                  style={styles.input}
-                  value={fishForm.price_label}
-                  onChange={function (e) {
-                    setFishForm({
-                      ...fishForm,
-                      price_label: e.target.value,
-                    });
-                  }}
-                  placeholder="Starting from ₹5,000"
-                />
-              </Field>
-              <Field label="Size">
-                <input
-                  style={styles.input}
-                  value={fishForm.size}
-                  onChange={function (e) {
-                    setFishForm({
-                      ...fishForm,
-                      size: e.target.value,
-                    });
-                  }}
-                  placeholder="3 - 4 inches"
-                />
-              </Field>
-              <Field label="Origin">
-                <input
-                  style={styles.input}
-                  value={fishForm.origin}
-                  onChange={function (e) {
-                    setFishForm({
-                      ...fishForm,
-                      origin: e.target.value,
-                    });
-                  }}
-                  placeholder="Thailand"
-                />
-              </Field>
-              <Field label="Availability">
-                <select
-                  style={styles.input}
-                  value={fishForm.availability}
-                  onChange={function (e) {
-                    setFishForm({
-                      ...fishForm,
-                      availability: e.target.value,
-                    });
-                  }}
-                >
-                  <option value="Available">Available</option>
-                  <option value="Limited">Limited</option>
-                  <option value="Pre-Order">Pre-Order</option>
-                  <option value="Sold Out">Sold Out</option>
-                </select>
-              </Field>
-              <Field label="Fish Image">
-                <input
-                  style={styles.fileInput}
-                  type="file"
-                  accept="image/*"
-                  onChange={function (e) {
-                    setFishImageFile(e.target.files?.[0] || null);
-                  }}
-                />
-              </Field>
-            </div>
-            <Field label="Description">
-              <textarea
-                style={styles.textarea}
-                rows="4"
-                value={fishForm.description}
-                onChange={function (e) {
-                  setFishForm({
-                    ...fishForm,
-                    description: e.target.value,
-                  });
-                }}
-                placeholder="Describe this fish..."
-              />
-            </Field>
-            {fishForm.image_url && !fishImageFile && (
-              <div style={styles.currentImageBox}>
-                <span>Current Image</span>
-                <img
-                  src={fishForm.image_url}
-                  alt={fishForm.name}
-                  style={styles.previewImage}
-                />
-              </div>
-            )}
-            {fishImageFile && (
-              <div style={styles.selectedFile}>
-                New image selected: {fishImageFile.name}
-              </div>
-            )}
-            <div style={styles.checkboxRow}>
-              <label style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={fishForm.is_featured}
-                  onChange={function (e) {
-                    setFishForm({
-                      ...fishForm,
-                      is_featured: e.target.checked,
-                    });
-                  }}
-                />
-                Featured fish
-              </label>
-              <label style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={fishForm.is_active}
-                  onChange={function (e) {
-                    setFishForm({
-                      ...fishForm,
-                      is_active: e.target.checked,
-                    });
-                  }}
-                />
-                Active on website
-              </label>
-            </div>
-            <div style={styles.modalActions}>
-              <button
-                type="button"
-                style={styles.cancelButton}
-                onClick={function () {
-                  setShowFishModal(false);
-                }}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                style={styles.primaryButton}
-                disabled={loading}
-              >
-                {loading
-                  ? uploadingFishImage
-                    ? "Uploading image..."
-                    : "Saving..."
-                  : fishForm.id
-                  ? "Update Fish"
-                  : "Add Fish"}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {showCategoryModal && (
-        <Modal
-          title={categoryForm.id ? "Edit Category" : "Add Category"}
-          onClose={function () {
-            if (!loading) setShowCategoryModal(false);
-          }}
-        >
-          <form onSubmit={saveCategory}>
-            <Field label="Category Name *">
-              <input
-                style={styles.input}
-                value={categoryForm.name}
-                onChange={function (e) {
-                  setCategoryForm({
-                    ...categoryForm,
-                    name: e.target.value,
-                  });
-                }}
-                placeholder="Premium Flowerhorns"
-              />
-            </Field>
-            <Field label="Slug">
-              <input
-                style={styles.input}
-                value={categoryForm.slug}
-                onChange={function (e) {
-                  setCategoryForm({
-                    ...categoryForm,
-                    slug: e.target.value,
-                  });
-                }}
-                placeholder="premium-flowerhorns"
-              />
-            </Field>
-            <div style={styles.formGrid}>
-              <Field label="Sort Order">
-                <input
-                  style={styles.input}
-                  type="number"
-                  value={categoryForm.sort_order}
-                  onChange={function (e) {
-                    setCategoryForm({
-                      ...categoryForm,
-                      sort_order: e.target.value,
-                    });
-                  }}
-                />
-              </Field>
-              <Field label="Category Image">
-                <input
-                  style={styles.fileInput}
-                  type="file"
-                  accept="image/*"
-                  onChange={function (e) {
-                    setCategoryImageFile(e.target.files?.[0] || null);
-                  }}
-                />
-              </Field>
-            </div>
-            {categoryForm.image_url && !categoryImageFile && (
-              <div style={styles.currentImageBox}>
-                <span>Current Image</span>
-                <img
-                  src={categoryForm.image_url}
-                  alt={categoryForm.name}
-                  style={styles.previewImage}
-                />
-              </div>
-            )}
-            {categoryImageFile && (
-              <div style={styles.selectedFile}>
-                New image selected: {categoryImageFile.name}
-              </div>
-            )}
-            <div style={styles.checkboxRow}>
-              <label style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={categoryForm.is_active}
-                  onChange={function (e) {
-                    setCategoryForm({
-                      ...categoryForm,
-                      is_active: e.target.checked,
-                    });
-                  }}
-                />
-                Active on website
-              </label>
-            </div>
-            <div style={styles.modalActions}>
-              <button
-                type="button"
-                style={styles.cancelButton}
-                onClick={function () {
-                  setShowCategoryModal(false);
-                }}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                style={styles.primaryButton}
-                disabled={loading}
-              >
-                {loading
-                  ? uploadingCategoryImage
-                    ? "Uploading image..."
-                    : "Saving..."
-                  : categoryForm.id
-                  ? "Update Category"
-                  : "Add Category"}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-    </div>
-  );
+
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
-function LoginScreen({ onLogin }) {
+
+function formatPrice(value) {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  const number = Number(value);
+
+  if (Number.isNaN(number)) {
+    return String(value);
+  }
+
+  return `₹${number.toLocaleString("en-IN")}`;
+}
+
+function getPublicUrl(path) {
+  if (!path) return "";
+
+  if (
+    String(path).startsWith("http://") ||
+    String(path).startsWith("https://")
+  ) {
+    return path;
+  }
+
+  let storagePath = String(path).trim();
+
+  storagePath = storagePath.replace(/^\/+/, "");
+
+  if (storagePath.startsWith(`${STORAGE_BUCKET}/`)) {
+    storagePath = storagePath.slice(
+      `${STORAGE_BUCKET}/`.length
+    );
+  }
+
+  const result = supabase.storage
+    .from(STORAGE_BUCKET)
+    .getPublicUrl(storagePath);
+
+  return result?.data?.publicUrl || "";
+}
+
+async function uploadImage(file, folder) {
+  if (!file) return null;
+
+  const extension =
+    file.name.indexOf(".") >= 0
+      ? file.name.split(".").pop().toLowerCase()
+      : "jpg";
+
+  const safeName = file.name
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[^a-zA-Z0-9-_]/g, "-")
+    .toLowerCase();
+
+  const fileName =
+    `${Date.now()}-${safeName || "image"}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}.${extension}`;
+
+  const filePath = `${folder}/${fileName}`;
+
+  const uploadResult = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+
+  if (uploadResult.error) {
+    throw uploadResult.error;
+  }
+
+  return getPublicUrl(filePath);
+}
+
+function AdminLogin({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  async function login(event) {
+
+  async function handleSubmit(event) {
     event.preventDefault();
+
+    if (!supabase) {
+      setError("Supabase is not configured.");
+      return;
+    }
+
     setLoading(true);
     setError("");
+
     const result = await supabase.auth.signInWithPassword({
       email: email.trim(),
-      password: password,
+      password,
     });
+
     if (result.error) {
       setError(result.error.message);
       setLoading(false);
       return;
     }
-    onLogin(result.data.session);
+
+    onLogin(result.data.user);
+
     setLoading(false);
   }
+
   return (
-    <div style={styles.loginScreen}>
+    <div style={styles.loginPage}>
       <div style={styles.loginCard}>
-        <div style={styles.loginLogo}>AquaaBark</div>
-        <div style={styles.loginSubtitle}>Admin Panel</div>
-        <form onSubmit={login}>
-          <label style={styles.loginLabel}>Email</label>
+        <div style={styles.loginLogo}>
+          MR. AQUATIC VIZAG
+        </div>
+
+        <div style={styles.loginSubtitle}>
+          Admin Dashboard
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <label style={styles.label}>Email</label>
+
           <input
             style={styles.input}
             type="email"
             value={email}
-            onChange={function (e) {
-              setEmail(e.target.value);
-            }}
+            onChange={(event) =>
+              setEmail(event.target.value)
+            }
             placeholder="Admin email"
             required
           />
-          <label style={styles.loginLabel}>Password</label>
+
+          <label style={styles.label}>Password</label>
+
           <input
             style={styles.input}
             type="password"
             value={password}
-            onChange={function (e) {
-              setPassword(e.target.value);
-            }}
+            onChange={(event) =>
+              setPassword(event.target.value)
+            }
             placeholder="Password"
             required
           />
-          {error && <div style={styles.loginError}>{error}</div>}
+
+          {error && (
+            <div style={styles.errorBox}>
+              {error}
+            </div>
+          )}
+
           <button
             style={styles.loginButton}
             type="submit"
@@ -963,991 +276,2661 @@ function LoginScreen({ onLogin }) {
     </div>
   );
 }
-function Dashboard({
+
+function FishModal({
   fish,
   categories,
-  activeFishCount,
-  featuredFishCount,
-  activeCategoryCount,
-  onFish,
-  onCategory,
-  onAddFish,
-  onAddCategory,
+  onClose,
+  onSave,
+  saving,
 }) {
-  return (
-    <section>
-      <div style={styles.pageHeader}>
-        <div>
-          <h1 style={styles.pageTitle}>Dashboard</h1>
-          <p style={styles.pageSubtitle}>
-            Manage your AquaaBark catalogue and website content.
-          </p>
-        </div>
-      </div>
-      <div style={styles.statsGrid}>
-        <StatCard title="Total Fish" value={fish.length} />
-        <StatCard title="Active Fish" value={activeFishCount} />
-        <StatCard title="Featured Fish" value={featuredFishCount} />
-        <StatCard title="Categories" value={activeCategoryCount} />
-      </div>
-      <div style={styles.dashboardGrid}>
-        <div style={styles.panel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <h2 style={styles.panelTitle}>Quick Actions</h2>
-              <p style={styles.panelSubtitle}>
-                Manage your catalogue quickly.
-              </p>
-            </div>
-          </div>
-          <div style={styles.quickActions}>
-            <button style={styles.quickButton} onClick={onAddFish}>
-              <strong>+ Add Fish</strong>
-              <span>Create a new fish listing</span>
-            </button>
-            <button style={styles.quickButton} onClick={onAddCategory}>
-              <strong>+ Add Category</strong>
-              <span>Create a new collection category</span>
-            </button>
-            <button style={styles.quickButton} onClick={onFish}>
-              <strong>Manage Fish</strong>
-              <span>Edit or remove listings</span>
-            </button>
-            <button style={styles.quickButton} onClick={onCategory}>
-              <strong>Manage Categories</strong>
-              <span>Update your collections</span>
-            </button>
-          </div>
-        </div>
-        <div style={styles.panel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <h2 style={styles.panelTitle}>Recent Fish</h2>
-              <p style={styles.panelSubtitle}>Latest catalogue entries.</p>
-            </div>
-          </div>
-          {fish.length === 0 ? (
-            <div style={styles.empty}>No fish added yet.</div>
-          ) : (
-            <div>
-              {fish.slice(0, 5).map(function (item) {
-                return (
-                  <div key={item.id} style={styles.recentItem}>
-                    <div style={styles.recentImage}>
-                      {item.image_url ? (
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          style={styles.containImage}
-                        />
-                      ) : (
-                        <span>🐟</span>
-                      )}
-                    </div>
-                    <div style={styles.recentInfo}>
-                      <strong>{item.name}</strong>
-                      <span>{categoryNameFromList(item.category_id, categories)}</span>
-                    </div>
-                    <span
-                      style={
-                        item.is_active
-                          ? styles.activeBadge
-                          : styles.inactiveBadge
-                      }
-                    >
-                      {item.is_active ? "Active" : "Hidden"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
+  const [form, setForm] = useState(
+    fish || EMPTY_FISH
   );
-}
-function FishManagement({
-  fish,
-  categories,
-  search,
-  setSearch,
-  categoryFilter,
-  setCategoryFilter,
-  onAdd,
-  onEdit,
-  onDelete,
-}) {
-  return (
-    <section>
-      <div style={styles.pageHeader}>
-        <div>
-          <h1 style={styles.pageTitle}>Fish Management</h1>
-          <p style={styles.pageSubtitle}>
-            Add, edit and manage fish displayed on the website.
-          </p>
-        </div>
-        <button style={styles.primaryButton} onClick={onAdd}>
-          + Add Fish
-        </button>
-      </div>
-      <div style={styles.filters}>
-        <input
-          style={styles.searchInput}
-          value={search}
-          onChange={function (e) {
-            setSearch(e.target.value);
-          }}
-          placeholder="Search fish..."
-        />
-        <select
-          style={styles.filterSelect}
-          value={categoryFilter}
-          onChange={function (e) {
-            setCategoryFilter(e.target.value);
-          }}
-        >
-          <option value="all">All Categories</option>
-          {categories.map(function (category) {
-            return (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            );
-          })}
-        </select>
-      </div>
-      <div style={styles.tablePanel}>
-        <div style={styles.tableScroll}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Fish</th>
-                <th style={styles.th}>Category</th>
-                <th style={styles.th}>Price</th>
-                <th style={styles.th}>Availability</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fish.map(function (item) {
-                return (
-                  <tr key={item.id}>
-                    <td style={styles.td}>
-                      <div style={styles.productCell}>
-                        <div style={styles.productThumb}>
-                          {item.image_url ? (
-                            <img
-                              src={item.image_url}
-                              alt={item.name}
-                              style={styles.containImage}
-                            />
-                          ) : (
-                            <span>🐟</span>
-                          )}
-                        </div>
-                        <div>
-                          <strong>{item.name}</strong>
-                          {item.is_featured && (
-                            <small style={styles.featuredText}>
-                              Featured
-                            </small>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      {categoryNameFromList(item.category_id, categories)}
-                    </td>
-                    <td style={styles.td}>
-                      {item.price_label ||
-                        (item.price !== null && item.price !== undefined
-                          ? "₹" + item.price
-                          : "Contact")}
-                    </td>
-                    <td style={styles.td}>
-                      {item.availability || "Available"}
-                    </td>
-                    <td style={styles.td}>
-                      <span
-                        style={
-                          item.is_active
-                            ? styles.activeBadge
-                            : styles.inactiveBadge
-                        }
-                      >
-                        {item.is_active ? "Active" : "Hidden"}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={styles.actionRow}>
-                        <button
-                          style={styles.editButton}
-                          onClick={function () {
-                            onEdit(item);
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          style={styles.deleteButton}
-                          onClick={function () {
-                            onDelete(item);
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {fish.length === 0 && (
-            <div style={styles.empty}>No fish found.</div>
-          )}
-        </div>
-      </div>
-    </section>
+
+  const [selectedFile, setSelectedFile] =
+    useState(null);
+
+  const [preview, setPreview] = useState(
+    fish?.image_url || ""
   );
-}
-function CategoryManagement({
-  categories,
-  search,
-  setSearch,
-  onAdd,
-  onEdit,
-  onDelete,
-}) {
-  return (
-    <section>
-      <div style={styles.pageHeader}>
-        <div>
-          <h1 style={styles.pageTitle}>Categories</h1>
-          <p style={styles.pageSubtitle}>
-            Manage the collections shown on your website.
-          </p>
-        </div>
-        <button style={styles.primaryButton} onClick={onAdd}>
-          + Add Category
-        </button>
-      </div>
-      <div style={styles.filters}>
-        <input
-          style={styles.searchInput}
-          value={search}
-          onChange={function (e) {
-            setSearch(e.target.value);
-          }}
-          placeholder="Search categories..."
-        />
-      </div>
-      <div style={styles.categoryGrid}>
-        {categories.map(function (item) {
-          return (
-            <div key={item.id} style={styles.categoryCard}>
-              <div style={styles.categoryImage}>
-                {item.image_url ? (
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    style={styles.containImage}
-                  />
-                ) : (
-                  <span style={styles.noImage}>No image</span>
-                )}
-              </div>
-              <div style={styles.categoryContent}>
-                <div style={styles.categoryTitleRow}>
-                  <h3 style={styles.categoryTitle}>{item.name}</h3>
-                  <span
-                    style={
-                      item.is_active
-                        ? styles.activeBadge
-                        : styles.inactiveBadge
-                    }
-                  >
-                    {item.is_active ? "Active" : "Hidden"}
-                  </span>
-                </div>
-                <div style={styles.categoryMeta}>
-                  Slug: {item.slug || "-"}
-                </div>
-                <div style={styles.categoryMeta}>
-                  Order: {item.sort_order ?? 0}
-                </div>
-                <div style={styles.actionRow}>
-                  <button
-                    style={styles.editButton}
-                    onClick={function () {
-                      onEdit(item);
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    style={styles.deleteButton}
-                    onClick={function () {
-                      onDelete(item);
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {categories.length === 0 && (
-        <div style={styles.empty}>No categories found.</div>
-      )}
-    </section>
-  );
-}
-function StorageView({ fish, categories }) {
-  const images = [];
-  fish.forEach(function (item) {
-    if (item.image_url) {
-      images.push({
-        id: "fish-" + item.id,
-        name: item.name,
-        type: "Fish",
-        url: item.image_url,
-      });
+
+  useEffect(() => {
+    setForm(fish || EMPTY_FISH);
+    setSelectedFile(null);
+    setPreview(fish?.image_url || "");
+  }, [fish]);
+
+  function updateField(field, value) {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
+
+  function handleFileChange(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setSelectedFile(file);
+
+    const objectUrl = URL.createObjectURL(file);
+
+    setPreview(objectUrl);
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (!form.name.trim()) {
+      alert("Please enter product name.");
+      return;
     }
-  });
-  categories.forEach(function (item) {
-    if (item.image_url) {
-      images.push({
-        id: "category-" + item.id,
-        name: item.name,
-        type: "Category",
-        url: item.image_url,
-      });
+
+    if (!form.category) {
+      alert("Please select a category.");
+      return;
     }
-  });
+
+    await onSave(form, selectedFile);
+  }
+
   return (
-    <section>
-      <div style={styles.pageHeader}>
-        <div>
-          <h1 style={styles.pageTitle}>Image Storage</h1>
-          <p style={styles.pageSubtitle}>
-            Images currently connected to your catalogue.
-          </p>
-        </div>
-      </div>
-      <div style={styles.storageGrid}>
-        {images.map(function (image) {
-          return (
-            <div key={image.id} style={styles.storageCard}>
-              <div style={styles.storageImage}>
-                <img
-                  src={image.url}
-                  alt={image.name}
-                  style={styles.containImage}
-                />
-              </div>
-              <div style={styles.storageInfo}>
-                <strong>{image.name}</strong>
-                <span>{image.type}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {images.length === 0 && (
-        <div style={styles.empty}>No uploaded images found.</div>
-      )}
-    </section>
-  );
-}
-function categoryNameFromList(categoryId, categories) {
-  const category = categories.find(function (item) {
-    return item.id === categoryId;
-  });
-  return category ? category.name : "Uncategorized";
-}
-function NavButton({ active, onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        ...styles.navButton,
-        ...(active ? styles.navButtonActive : {}),
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-function StatCard({ title, value }) {
-  return (
-    <div style={styles.statCard}>
-      <span style={styles.statTitle}>{title}</span>
-      <strong style={styles.statValue}>{value}</strong>
-    </div>
-  );
-}
-function Field({ label, children }) {
-  return (
-    <label style={styles.field}>
-      <span style={styles.fieldLabel}>{label}</span>
-      {children}
-    </label>
-  );
-}
-function Modal({ title, children, onClose }) {
-  return (
-    <div style={styles.overlay}>
+    <div style={styles.modalOverlay}>
       <div style={styles.modal}>
         <div style={styles.modalHeader}>
-          <h2 style={styles.modalTitle}>{title}</h2>
-          <button style={styles.closeButton} onClick={onClose}>
+          <div>
+            <h2 style={styles.modalTitle}>
+              {form.id
+                ? "Edit Product"
+                : "Add Product"}
+            </h2>
+
+            <div style={styles.modalSubtitle}>
+              Add product information and image
+            </div>
+          </div>
+
+          <button
+            style={styles.closeButton}
+            onClick={onClose}
+            type="button"
+          >
             ×
           </button>
         </div>
-        <div style={styles.modalBody}>{children}</div>
+
+        <form onSubmit={handleSubmit}>
+          <div style={styles.formGrid}>
+            <div style={styles.formColumn}>
+              <label style={styles.label}>
+                Fish Name *
+              </label>
+
+              <input
+                style={styles.input}
+                value={form.name}
+                onChange={(event) =>
+                  updateField(
+                    "name",
+                    event.target.value
+                  )
+                }
+                placeholder="Example: Galaxy Koi Betta"
+                required
+              />
+
+              <label style={styles.label}>
+                Category *
+              </label>
+
+              <select
+                style={styles.input}
+                value={form.category}
+                onChange={(event) =>
+                  updateField(
+                    "category",
+                    event.target.value
+                  )
+                }
+                required
+              >
+                <option value="">
+                  Select category
+                </option>
+
+                {categories.map((category) => (
+                  <option
+                    key={category.id}
+                    value={category.name}
+                  >
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+
+              <label style={styles.label}>
+                Price
+              </label>
+
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.price}
+                onChange={(event) =>
+                  updateField(
+                    "price",
+                    event.target.value
+                  )
+                }
+                placeholder="2500"
+              />
+
+              <label style={styles.label}>
+                Stock
+              </label>
+
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                step="1"
+                value={form.stock}
+                onChange={(event) =>
+                  updateField(
+                    "stock",
+                    event.target.value
+                  )
+                }
+                placeholder="1"
+              />
+
+              <div style={styles.stockHelper}>
+                Enter <strong>0</strong> if this
+                product is sold out.
+              </div>
+            </div>
+
+            <div style={styles.formColumn}>
+              <label style={styles.label}>
+                Fish Image
+              </label>
+
+              <div style={styles.imageUploadBox}>
+                {preview ? (
+                  <img
+                    src={preview}
+                    alt={
+                      form.name || "Fish"
+                    }
+                    style={styles.previewImage}
+                  />
+                ) : (
+                  <div style={styles.noImage}>
+                    No image selected
+                  </div>
+                )}
+              </div>
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                style={styles.fileInput}
+              />
+
+              <div style={styles.helperText}>
+                Images are uploaded to the{" "}
+                <strong>
+                  {STORAGE_BUCKET}
+                </strong>{" "}
+                bucket under the{" "}
+                <strong>fish</strong> folder.
+              </div>
+
+              <label style={styles.label}>
+                Description
+              </label>
+
+              <textarea
+                style={styles.textarea}
+                value={form.description}
+                onChange={(event) =>
+                  updateField(
+                    "description",
+                    event.target.value
+                  )
+                }
+                placeholder="Describe this fish..."
+                rows={7}
+              />
+            </div>
+          </div>
+
+          <div style={styles.modalFooter}>
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              onClick={onClose}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              style={styles.primaryButton}
+              disabled={saving}
+            >
+              {saving
+                ? "Saving..."
+                : form.id
+                ? "Update Product"
+                : "Add Product"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
 }
+
+function CategoryModal({
+  category,
+  onClose,
+  onSave,
+  saving,
+}) {
+  const [form, setForm] = useState(
+    category || EMPTY_CATEGORY
+  );
+
+  const [selectedFile, setSelectedFile] =
+    useState(null);
+
+  const [preview, setPreview] = useState(
+    category?.image_url || ""
+  );
+
+  useEffect(() => {
+    setForm(category || EMPTY_CATEGORY);
+    setSelectedFile(null);
+    setPreview(category?.image_url || "");
+  }, [category]);
+
+  function updateField(field, value) {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
+
+  function handleNameChange(value) {
+    setForm((previous) => ({
+      ...previous,
+      name: value,
+      slug: previous.id
+        ? previous.slug
+        : slugify(value),
+    }));
+  }
+
+  function handleFileChange(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setSelectedFile(file);
+
+    const objectUrl = URL.createObjectURL(file);
+
+    setPreview(objectUrl);
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (!form.name.trim()) {
+      alert("Please enter category name.");
+      return;
+    }
+
+    await onSave(form, selectedFile);
+  }
+
+  return (
+    <div style={styles.modalOverlay}>
+      <div style={styles.modalSmall}>
+        <div style={styles.modalHeader}>
+          <div>
+            <h2 style={styles.modalTitle}>
+              {form.id
+                ? "Edit Category"
+                : "Add Category"}
+            </h2>
+
+            <div style={styles.modalSubtitle}>
+              Manage aquarium categories
+            </div>
+          </div>
+
+          <button
+            style={styles.closeButton}
+            onClick={onClose}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <label style={styles.label}>
+            Category Name *
+          </label>
+
+          <input
+            style={styles.input}
+            value={form.name}
+            onChange={(event) =>
+              handleNameChange(
+                event.target.value
+              )
+            }
+            placeholder="Example: Imported Bettas"
+            required
+          />
+
+          <label style={styles.label}>
+            Slug
+          </label>
+
+          <input
+            style={styles.input}
+            value={form.slug}
+            onChange={(event) =>
+              updateField(
+                "slug",
+                slugify(
+                  event.target.value
+                )
+              )
+            }
+            placeholder="imported-bettas"
+          />
+
+          <label style={styles.label}>
+            Category Image
+          </label>
+
+          {preview ? (
+            <img
+              src={preview}
+              alt={form.name}
+              style={styles.categoryPreview}
+            />
+          ) : (
+            <div style={styles.noImage}>
+              No image selected
+            </div>
+          )}
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            style={styles.fileInput}
+          />
+
+          <div style={styles.helperText}>
+            Category images are uploaded to the{" "}
+            <strong>
+              {STORAGE_BUCKET}/categories
+            </strong>{" "}
+            folder.
+          </div>
+
+          <div style={styles.modalFooter}>
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              onClick={onClose}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              style={styles.primaryButton}
+              disabled={saving}
+            >
+              {saving
+                ? "Saving..."
+                : form.id
+                ? "Update Category"
+                : "Add Category"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function StorageView({
+  fish,
+  categories,
+}) {
+  const fishImages = fish.filter(
+    (item) => item.image_url
+  );
+
+  const categoryImages =
+    categories.filter(
+      (item) => item.image_url
+    );
+
+  return (
+    <div>
+      <div style={styles.sectionHeader}>
+        <div>
+          <h2 style={styles.sectionTitle}>
+            Image Storage
+          </h2>
+
+          <p style={styles.sectionSubtitle}>
+            Images currently referenced by
+            your catalogue.
+          </p>
+        </div>
+      </div>
+
+      <div style={styles.storageInfo}>
+        <div style={styles.storageInfoCard}>
+          <strong>Bucket</strong>
+          <div>{STORAGE_BUCKET}</div>
+        </div>
+
+        <div style={styles.storageInfoCard}>
+          <strong>Fish Images</strong>
+          <div>{fishImages.length}</div>
+        </div>
+
+        <div style={styles.storageInfoCard}>
+          <strong>Category Images</strong>
+          <div>
+            {categoryImages.length}
+          </div>
+        </div>
+      </div>
+
+      {fishImages.length === 0 &&
+      categoryImages.length === 0 ? (
+        <div style={styles.emptyState}>
+          No images have been uploaded yet.
+        </div>
+      ) : (
+        <div style={styles.storageGrid}>
+          {fishImages.map((item) => (
+            <div
+              key={`fish-${item.id}`}
+              style={styles.storageCard}
+            >
+              <img
+                src={item.image_url}
+                alt={item.name}
+                style={styles.storageImage}
+              />
+
+              <div
+                style={
+                  styles.storageCardBody
+                }
+              >
+                <strong>
+                  {item.name}
+                </strong>
+
+                <span>Fish</span>
+              </div>
+            </div>
+          ))}
+
+          {categoryImages.map(
+            (item) => (
+              <div
+                key={`category-${item.id}`}
+                style={
+                  styles.storageCard
+                }
+              >
+                <img
+                  src={item.image_url}
+                  alt={item.name}
+                  style={
+                    styles.storageImage
+                  }
+                />
+
+                <div
+                  style={
+                    styles.storageCardBody
+                  }
+                >
+                  <strong>
+                    {item.name}
+                  </strong>
+
+                  <span>
+                    Category
+                  </span>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminDashboard({
+  user,
+  onLogout,
+}) {
+  const [activeTab, setActiveTab] =
+    useState("fish");
+
+  const [fish, setFish] =
+    useState([]);
+
+  const [categories, setCategories] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [fishModal, setFishModal] =
+    useState(null);
+
+  const [categoryModal, setCategoryModal] =
+    useState(null);
+
+  const [search, setSearch] =
+    useState("");
+
+  async function loadFish() {
+    if (!supabase) return;
+
+    const result = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", {
+        ascending: false,
+      });
+
+    if (result.error) {
+      console.error(
+        "Products loading error:",
+        result.error
+      );
+
+      return;
+    }
+
+    setFish(result.data || []);
+  }
+
+  async function ensureDefaultCategories() {
+    if (!supabase) return;
+
+    const existingResult =
+      await supabase
+        .from("categories")
+        .select(
+          "id,name,slug,image_url,created_at"
+        );
+
+    if (existingResult.error) {
+      console.error(
+        "Category loading error:",
+        existingResult.error
+      );
+
+      return;
+    }
+
+    const existing =
+      existingResult.data || [];
+
+    const existingSlugs =
+      new Set(
+        existing.map(
+          (item) => item.slug
+        )
+      );
+
+    const missing =
+      DEFAULT_CATEGORIES.filter(
+        (category) =>
+          !existingSlugs.has(
+            category.slug
+          )
+      );
+
+    if (missing.length > 0) {
+      const insertResult =
+        await supabase
+          .from("categories")
+          .insert(
+            missing.map(
+              (category) => ({
+                name: category.name,
+                slug: category.slug,
+                image_url: "",
+              })
+            )
+          );
+
+      if (insertResult.error) {
+        console.error(
+          "Default category creation error:",
+          insertResult.error
+        );
+      }
+    }
+  }
+
+  async function loadCategories() {
+    if (!supabase) return;
+
+    await ensureDefaultCategories();
+
+    const result =
+      await supabase
+        .from("categories")
+        .select("*")
+        .order("name", {
+          ascending: true,
+        });
+
+    if (result.error) {
+      console.error(
+        "Category loading error:",
+        result.error
+      );
+
+      return;
+    }
+
+    setCategories(
+      result.data || []
+    );
+  }
+
+  async function loadAll() {
+    setLoading(true);
+
+    await Promise.all([
+      loadFish(),
+      loadCategories(),
+    ]);
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    const productsChannel =
+      supabase
+        .channel(
+          "admin-products-realtime"
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "products",
+          },
+          () => {
+            loadFish();
+          }
+        )
+        .subscribe();
+
+    const categoriesChannel =
+      supabase
+        .channel(
+          "admin-categories-realtime"
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "categories",
+          },
+          () => {
+            loadCategories();
+          }
+        )
+        .subscribe();
+
+    return () => {
+      supabase.removeChannel(
+        productsChannel
+      );
+
+      supabase.removeChannel(
+        categoriesChannel
+      );
+    };
+  }, []);
+
+  async function handleSaveFish(
+    form,
+    file
+  ) {
+    if (!supabase) return;
+
+    setSaving(true);
+
+    try {
+      let imageUrl =
+        form.image_url || "";
+
+      if (file) {
+        imageUrl =
+          await uploadImage(
+            file,
+            "fish"
+          );
+      }
+
+      // Keep this payload aligned with the public.products table:
+      // id, name, category, price, description, image_url, stock, created_at.
+      const payload = {
+        name: form.name.trim(),
+
+        category:
+          form.category?.trim() || "",
+
+        price:
+          form.price === "" ||
+          form.price === null ||
+          form.price === undefined
+            ? null
+            : Number(form.price),
+
+        description:
+          form.description?.trim() || "",
+
+        stock:
+          form.stock === "" ||
+          form.stock === null ||
+          form.stock === undefined
+            ? 0
+            : Number(form.stock),
+
+        image_url: imageUrl,
+      };
+
+      let result;
+
+      if (form.id) {
+        result = await supabase
+          .from("products")
+          .update(payload)
+          .eq("id", form.id);
+      } else {
+        result = await supabase
+          .from("products")
+          .insert(payload);
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      await loadFish();
+
+      setFishModal(null);
+    } catch (error) {
+      console.error(
+        "Product save error:",
+        error
+      );
+
+      alert(
+        `Unable to save product.\n\n${
+          error?.message ||
+          "Unknown error"
+        }`
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteFish(
+    item
+  ) {
+    const confirmed =
+      window.confirm(
+        `Delete "${item.name}"?\n\nThis will remove the product from the website catalogue.`
+      );
+
+    if (!confirmed) return;
+
+    const result =
+      await supabase
+        .from("products")
+        .delete()
+        .eq("id", item.id);
+
+    if (result.error) {
+      alert(
+        `Unable to delete product.\n\n${result.error.message}`
+      );
+
+      return;
+    }
+
+    await loadFish();
+  }
+
+  async function handleSaveCategory(
+    form,
+    file
+  ) {
+    if (!supabase) return;
+
+    setSaving(true);
+
+    try {
+      let imageUrl =
+        form.image_url || "";
+
+      if (file) {
+        imageUrl =
+          await uploadImage(
+            file,
+            "categories"
+          );
+      }
+
+      // Keep this payload aligned with the public.categories table:
+      // id, name, slug, image_url, created_at.
+      const payload = {
+        name: form.name.trim(),
+
+        slug:
+          slugify(form.slug) ||
+          slugify(form.name),
+
+        image_url: imageUrl,
+      };
+
+      let result;
+
+      if (form.id) {
+        result =
+          await supabase
+            .from("categories")
+            .update(payload)
+            .eq(
+              "id",
+              form.id
+            );
+      } else {
+        result =
+          await supabase
+            .from("categories")
+            .insert(payload);
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      await loadCategories();
+
+      setCategoryModal(null);
+    } catch (error) {
+      console.error(
+        "Category save error:",
+        error
+      );
+
+      alert(
+        `Unable to save category.\n\n${
+          error?.message ||
+          "Unknown error"
+        }`
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteCategory(
+    category
+  ) {
+    const productsUsingCategory =
+      fish.filter(
+        (item) =>
+          String(
+            item.category
+          ).trim().toLowerCase() ===
+          String(
+            category.name
+          ).trim().toLowerCase()
+      );
+
+    if (
+      productsUsingCategory.length >
+      0
+    ) {
+      alert(
+        `Cannot delete "${category.name}" because ${productsUsingCategory.length} product(s) are using this category.\n\nMove those products to another category first.`
+      );
+
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Delete "${category.name}"?`
+      );
+
+    if (!confirmed) return;
+
+    const result =
+      await supabase
+        .from("categories")
+        .delete()
+        .eq(
+          "id",
+          category.id
+        );
+
+    if (result.error) {
+      alert(
+        `Unable to delete category.\n\n${result.error.message}`
+      );
+
+      return;
+    }
+
+    await loadCategories();
+  }
+
+  const filteredFish =
+    useMemo(() => {
+      const query =
+        search
+          .trim()
+          .toLowerCase();
+
+      if (!query) return fish;
+
+      return fish.filter(
+        (item) => {
+          return [
+            item.name,
+            item.description,
+            item.category,
+            item.price,
+            item.stock,
+          ]
+            .filter(
+              (value) =>
+                value !== null &&
+                value !== undefined
+            )
+            .some(
+              (value) =>
+                String(value)
+                  .toLowerCase()
+                  .includes(query)
+            );
+        }
+      );
+    }, [fish, search]);
+
+  const stats =
+    useMemo(() => {
+      return {
+        fish: fish.length,
+
+        activeFish:
+          fish.filter(
+            (item) =>
+              Number(item.stock) >
+              0
+          ).length,
+
+        categories:
+          categories.length,
+
+        featured: 0,
+      };
+    }, [fish, categories]);
+
+  if (loading) {
+    return (
+      <div
+        style={
+          styles.loadingPage
+        }
+      >
+        <div
+          style={
+            styles.loadingSpinner
+          }
+        />
+
+        <div>
+          Loading Mr. Aquatic
+          Vizag...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.adminPage}>
+      <header style={styles.topbar}>
+        <div style={styles.brandArea}>
+          <div style={styles.brand}>
+            MR. AQUATIC VIZAG
+          </div>
+
+          <div
+            style={
+              styles.brandSubtitle
+            }
+          >
+            Aquarium Management
+          </div>
+        </div>
+
+        <div
+          style={
+            styles.topbarRight
+          }
+        >
+          <div
+            style={
+              styles.userEmail
+            }
+          >
+            {user?.email}
+          </div>
+
+          <button
+            style={
+              styles.logoutButton
+            }
+            onClick={onLogout}
+          >
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <div style={styles.dashboard}>
+        <aside
+          style={styles.sidebar}
+        >
+          <div
+            style={
+              styles.sidebarTitle
+            }
+          >
+            Dashboard
+          </div>
+
+          <button
+            style={{
+              ...styles.sidebarButton,
+              ...(activeTab ===
+              "fish"
+                ? styles.sidebarButtonActive
+                : {}),
+            }}
+            onClick={() =>
+              setActiveTab("fish")
+            }
+          >
+            <span>🐟</span>
+            Fish Management
+          </button>
+
+          <button
+            style={{
+              ...styles.sidebarButton,
+              ...(activeTab ===
+              "categories"
+                ? styles.sidebarButtonActive
+                : {}),
+            }}
+            onClick={() =>
+              setActiveTab(
+                "categories"
+              )
+            }
+          >
+            <span>📂</span>
+            Categories
+          </button>
+
+          <button
+            style={{
+              ...styles.sidebarButton,
+              ...(activeTab ===
+              "storage"
+                ? styles.sidebarButtonActive
+                : {}),
+            }}
+            onClick={() =>
+              setActiveTab("storage")
+            }
+          >
+            <span>🖼️</span>
+            Image Storage
+          </button>
+
+          <div
+            style={
+              styles.sidebarStats
+            }
+          >
+            <div
+              style={
+                styles.sidebarStat
+              }
+            >
+              <span>
+                Total Products
+              </span>
+
+              <strong>
+                {stats.fish}
+              </strong>
+            </div>
+
+            <div
+              style={
+                styles.sidebarStat
+              }
+            >
+              <span>
+                Available
+              </span>
+
+              <strong>
+                {stats.activeFish}
+              </strong>
+            </div>
+
+            <div
+              style={
+                styles.sidebarStat
+              }
+            >
+              <span>
+                Categories
+              </span>
+
+              <strong>
+                {stats.categories}
+              </strong>
+            </div>
+          </div>
+        </aside>
+
+        <main style={styles.main}>
+          {activeTab ===
+            "fish" && (
+            <div>
+              <div
+                style={
+                  styles.sectionHeader
+                }
+              >
+                <div>
+                  <h1
+                    style={
+                      styles.sectionTitle
+                    }
+                  >
+                    Fish Management
+                  </h1>
+
+                  <p
+                    style={
+                      styles.sectionSubtitle
+                    }
+                  >
+                    Manage the fish
+                    displayed on
+                    the Mr. Aquatic
+                    Vizag website.
+                  </p>
+                </div>
+
+                <button
+                  style={
+                    styles.primaryButton
+                  }
+                  onClick={() =>
+                    setFishModal({
+                      ...EMPTY_FISH,
+                    })
+                  }
+                >
+                  + Add Fish
+                </button>
+              </div>
+
+              <div
+                style={
+                  styles.statsGrid
+                }
+              >
+                <div
+                  style={
+                    styles.statCard
+                  }
+                >
+                  <span>
+                    Total Fish
+                  </span>
+
+                  <strong>
+                    {stats.fish}
+                  </strong>
+                </div>
+
+                <div
+                  style={
+                    styles.statCard
+                  }
+                >
+                  <span>
+                    Available Fish
+                  </span>
+
+                  <strong>
+                    {
+                      stats.activeFish
+                    }
+                  </strong>
+                </div>
+
+                <div
+                  style={
+                    styles.statCard
+                  }
+                >
+                  <span>
+                    Sold Out
+                  </span>
+
+                  <strong>
+                    {fish.filter(
+                      (item) =>
+                        Number(
+                          item.stock
+                        ) <= 0
+                    ).length}
+                  </strong>
+                </div>
+
+                <div
+                  style={
+                    styles.statCard
+                  }
+                >
+                  <span>
+                    Categories
+                  </span>
+
+                  <strong>
+                    {
+                      stats.categories
+                    }
+                  </strong>
+                </div>
+              </div>
+
+              <div
+                style={
+                  styles.toolbar
+                }
+              >
+                <input
+                  style={
+                    styles.searchInput
+                  }
+                  value={search}
+                  onChange={(
+                    event
+                  ) =>
+                    setSearch(
+                      event.target
+                        .value
+                    )
+                  }
+                  placeholder="Search fish, category..."
+                />
+
+                <button
+                  style={
+                    styles.refreshButton
+                  }
+                  onClick={
+                    loadAll
+                  }
+                >
+                  ↻ Refresh
+                </button>
+              </div>
+
+              {filteredFish.length ===
+              0 ? (
+                <div
+                  style={
+                    styles.emptyState
+                  }
+                >
+                  <div
+                    style={
+                      styles.emptyIcon
+                    }
+                  >
+                    🐟
+                  </div>
+
+                  <h3>
+                    No fish found
+                  </h3>
+
+                  <p>
+                    Add your first
+                    fish using the
+                    "Add Fish"
+                    button.
+                  </p>
+                </div>
+              ) : (
+                <div
+                  style={
+                    styles.tableWrapper
+                  }
+                >
+                  <table
+                    style={
+                      styles.table
+                    }
+                  >
+                    <thead>
+                      <tr>
+                        <th
+                          style={
+                            styles.th
+                          }
+                        >
+                          Image
+                        </th>
+
+                        <th
+                          style={
+                            styles.th
+                          }
+                        >
+                          Fish
+                        </th>
+
+                        <th
+                          style={
+                            styles.th
+                          }
+                        >
+                          Category
+                        </th>
+
+                        <th
+                          style={
+                            styles.th
+                          }
+                        >
+                          Price
+                        </th>
+
+                        <th
+                          style={
+                            styles.th
+                          }
+                        >
+                          Stock
+                        </th>
+
+                        <th
+                          style={
+                            styles.th
+                          }
+                        >
+                          Status
+                        </th>
+
+                        <th
+                          style={
+                            styles.th
+                          }
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {filteredFish.map(
+                        (item) => (
+                          <tr
+                            key={
+                              item.id
+                            }
+                          >
+                            <td
+                              style={
+                                styles.td
+                              }
+                            >
+                              {item.image_url ? (
+                                <img
+                                  src={
+                                    getPublicUrl(
+                                      item.image_url
+                                    )
+                                  }
+                                  alt={
+                                    item.name
+                                  }
+                                  style={
+                                    styles.tableImage
+                                  }
+                                />
+                              ) : (
+                                <div
+                                  style={
+                                    styles.tableNoImage
+                                  }
+                                >
+                                  —
+                                </div>
+                              )}
+                            </td>
+
+                            <td
+                              style={
+                                styles.td
+                              }
+                            >
+                              <div
+                                style={
+                                  styles.fishName
+                                }
+                              >
+                                {
+                                  item.name
+                                }
+                              </div>
+
+                            </td>
+
+                            <td
+                              style={
+                                styles.td
+                              }
+                            >
+                              <span
+                                style={
+                                  styles.categoryBadge
+                                }
+                              >
+                                {
+                                  item.category ||
+                                  "Other"
+                                }
+                              </span>
+                            </td>
+
+                            <td
+                              style={
+                                styles.td
+                              }
+                            >
+                              {formatPrice(
+                                item.price
+                              ) ||
+                                "—"}
+                            </td>
+
+                            <td
+                              style={
+                                styles.td
+                              }
+                            >
+                              {
+                                item.stock ??
+                                0
+                              }
+                            </td>
+
+                            <td
+                              style={
+                                styles.td
+                              }
+                            >
+                              <span
+                                style={{
+                                  ...styles.statusBadge,
+                                  ...(Number(
+                                    item.stock
+                                  ) >
+                                  0
+                                    ? styles.statusAvailable
+                                    : styles.statusOther),
+                                }}
+                              >
+                                {Number(
+                                  item.stock
+                                ) >
+                                0
+                                  ? "Available"
+                                  : "Sold Out"}
+                              </span>
+                            </td>
+
+                            <td
+                              style={
+                                styles.td
+                              }
+                            >
+                              <div
+                                style={
+                                  styles.actionButtons
+                                }
+                              >
+                                <button
+                                  style={
+                                    styles.editButton
+                                  }
+                                  onClick={() =>
+                                    setFishModal({
+                                      ...item,
+                                    })
+                                  }
+                                >
+                                  Edit
+                                </button>
+
+                                <button
+                                  style={
+                                    styles.deleteButton
+                                  }
+                                  onClick={() =>
+                                    handleDeleteFish(
+                                      item
+                                    )
+                                  }
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab ===
+            "categories" && (
+            <div>
+              <div
+                style={
+                  styles.sectionHeader
+                }
+              >
+                <div>
+                  <h1
+                    style={
+                      styles.sectionTitle
+                    }
+                  >
+                    Categories
+                  </h1>
+
+                  <p
+                    style={
+                      styles.sectionSubtitle
+                    }
+                  >
+                    Manage fish
+                    categories used
+                    by your website.
+                  </p>
+                </div>
+
+                <button
+                  style={
+                    styles.primaryButton
+                  }
+                  onClick={() =>
+                    setCategoryModal({
+                      ...EMPTY_CATEGORY,
+                    })
+                  }
+                >
+                  + Add Category
+                </button>
+              </div>
+
+              <div
+                style={
+                  styles.categoryGrid
+                }
+              >
+                {categories.map(
+                  (category) => (
+                    <div
+                      key={
+                        category.id
+                      }
+                      style={
+                        styles.categoryCard
+                      }
+                    >
+                      <div
+                        style={
+                          styles.categoryImageWrapper
+                        }
+                      >
+                        {category.image_url ? (
+                          <img
+                            src={
+                              getPublicUrl(
+                                category.image_url
+                              )
+                            }
+                            alt={
+                              category.name
+                            }
+                            style={
+                              styles.categoryCardImage
+                            }
+                          />
+                        ) : (
+                          <div
+                            style={
+                              styles.categoryPlaceholder
+                            }
+                          >
+                            🐟
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        style={
+                          styles.categoryCardContent
+                        }
+                      >
+                        <h3
+                          style={
+                            styles.categoryCardTitle
+                          }
+                        >
+                          {
+                            category.name
+                          }
+                        </h3>
+
+                        <div
+                          style={
+                            styles.categorySlug
+                          }
+                        >
+                          /
+                          {
+                            category.slug
+                          }
+                        </div>
+
+                        <div
+                          style={
+                            styles.categoryActions
+                          }
+                        >
+                          <button
+                            style={
+                              styles.editButton
+                            }
+                            onClick={() =>
+                              setCategoryModal({
+                                ...category,
+                              })
+                            }
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            style={
+                              styles.deleteButton
+                            }
+                            onClick={() =>
+                              handleDeleteCategory(
+                                category
+                              )
+                            }
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab ===
+            "storage" && (
+            <StorageView
+              fish={fish}
+              categories={
+                categories
+              }
+            />
+          )}
+        </main>
+      </div>
+
+      {fishModal && (
+        <FishModal
+          fish={fishModal}
+          categories={categories}
+          onClose={() =>
+            setFishModal(null)
+          }
+          onSave={
+            handleSaveFish
+          }
+          saving={saving}
+        />
+      )}
+
+      {categoryModal && (
+        <CategoryModal
+          category={
+            categoryModal
+          }
+          onClose={() =>
+            setCategoryModal(
+              null
+            )
+          }
+          onSave={
+            handleSaveCategory
+          }
+          saving={saving}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function Admin() {
+  const [user, setUser] =
+    useState(null);
+
+  const [checkingAuth, setCheckingAuth] =
+    useState(true);
+
+  const [authError, setAuthError] =
+    useState("");
+
+  async function checkAdmin(
+    userToCheck
+  ) {
+    if (
+      !supabase ||
+      !userToCheck
+    ) {
+      setAuthError(
+        "Authentication unavailable."
+      );
+
+      setCheckingAuth(false);
+
+      return;
+    }
+
+    const result =
+      await supabase
+        .from("admins")
+        .select("*")
+        .eq(
+          "email",
+          userToCheck.email
+        )
+        .maybeSingle();
+
+    if (result.error) {
+      console.error(
+        "Admin verification error:",
+        result.error
+      );
+
+      setAuthError(
+        "Unable to verify admin access."
+      );
+
+      await supabase.auth.signOut();
+
+      setUser(null);
+      setCheckingAuth(false);
+
+      return;
+    }
+
+    if (!result.data) {
+      setAuthError(
+        "This account does not have admin access."
+      );
+
+      await supabase.auth.signOut();
+
+      setUser(null);
+      setCheckingAuth(false);
+
+      return;
+    }
+
+    setUser(userToCheck);
+    setAuthError("");
+    setCheckingAuth(false);
+  }
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function initialize() {
+      if (!supabase) {
+        setAuthError(
+          "Supabase is not configured. Check your .env file."
+        );
+
+        setCheckingAuth(false);
+
+        return;
+      }
+
+      const result =
+        await supabase.auth.getSession();
+
+      if (!mounted) return;
+
+      if (result.error) {
+        setAuthError(
+          result.error.message
+        );
+
+        setCheckingAuth(false);
+
+        return;
+      }
+
+      if (
+        result.data.session
+          ?.user
+      ) {
+        await checkAdmin(
+          result.data.session
+            .user
+        );
+      } else {
+        setCheckingAuth(false);
+      }
+    }
+
+    initialize();
+
+    if (!supabase) {
+      return () => {
+        mounted = false;
+      };
+    }
+
+    const {
+      data: {
+        subscription,
+      },
+    } =
+      supabase.auth.onAuthStateChange(
+        async (
+          _event,
+          session
+        ) => {
+          if (!mounted) return;
+
+          if (
+            session?.user
+          ) {
+            await checkAdmin(
+              session.user
+            );
+          } else {
+            setUser(null);
+            setCheckingAuth(
+              false
+            );
+          }
+        }
+      );
+
+    return () => {
+      mounted = false;
+
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  async function handleLogout() {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+
+    setUser(null);
+  }
+
+  if (checkingAuth) {
+    return (
+      <div
+        style={
+          styles.loadingPage
+        }
+      >
+        <div
+          style={
+            styles.loadingSpinner
+          }
+        />
+
+        <div>
+          Checking admin
+          access...
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        {authError && (
+          <div
+            style={
+              styles.globalError
+            }
+          >
+            {authError}
+          </div>
+        )}
+
+        <AdminLogin
+          onLogin={(
+            loggedInUser
+          ) =>
+            checkAdmin(
+              loggedInUser
+            )
+          }
+        />
+      </>
+    );
+  }
+
+  return (
+    <AdminDashboard
+      user={user}
+      onLogout={handleLogout}
+    />
+  );
+}
+
 const styles = {
-  app: {
-    minHeight: "100vh",
-    background: "#f5f7f6",
-    color: "#17211f",
-    fontFamily:
-      "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-  },
-  centerScreen: {
+  loginPage: {
     minHeight: "100vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#f5f7f6",
-  },
-  loadingBox: {
-    padding: "30px",
     background: "#ffffff",
-    borderRadius: "14px",
-    boxShadow: "0 10px 40px rgba(0,0,0,0.08)",
+    padding: "24px",
+    boxSizing: "border-box",
+    fontFamily:
+      "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
   },
+
+  loginCard: {
+    width: "100%",
+    maxWidth: "440px",
+    boxSizing: "border-box",
+    background: "#ffffff",
+    border: "1px solid #e5ecef",
+    borderTop: "4px solid #087f8c",
+    borderRadius: "18px",
+    padding: "42px 44px 40px",
+    boxShadow: "0 20px 55px rgba(15, 39, 48, 0.10)",
+  },
+
+  loginLogo: {
+    fontSize: "25px",
+    fontWeight: 900,
+    letterSpacing: "1.8px",
+    color: "#063b48",
+    textAlign: "center",
+  },
+
+  loginSubtitle: {
+    textAlign: "center",
+    marginTop: "8px",
+    marginBottom: "30px",
+    color: "#55727a",
+    fontSize: "14px",
+    fontWeight: 600,
+    letterSpacing: "0.2px",
+  },
+
+  loginButton: {
+    width: "100%",
+    border: "none",
+    background: "linear-gradient(135deg, #087f8c, #075e69)",
+    color: "#fff",
+    borderRadius: "10px",
+    padding: "13px 18px",
+    cursor: "pointer",
+    fontWeight: 700,
+    fontSize: "14px",
+    marginTop: "8px",
+    boxShadow: "0 8px 18px rgba(8,127,140,0.18)",
+  },
+
+  adminPage: {
+    minHeight: "100vh",
+    background: "#ffffff",
+    color: "#102a33",
+    fontFamily:
+      "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+  },
+
   topbar: {
-    height: "76px",
-    background: "#ffffff",
-    borderBottom: "1px solid #e6ebe9",
+    minHeight: "72px",
+    height: "auto",
+    background: "linear-gradient(135deg, #03252e 0%, #064452 100%)",
+    color: "#fff",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "0 28px",
-    position: "sticky",
-    top: 0,
+    padding: "12px 28px",
+    boxSizing: "border-box",
+    gap: "20px",
+    position: "relative",
     zIndex: 20,
+    boxShadow:
+      "0 2px 12px rgba(0,0,0,0.12)",
   },
+
+  brandArea: {
+    display: "flex",
+    flexDirection: "column",
+  },
+
   brand: {
-    fontSize: "24px",
-    fontWeight: 800,
-    letterSpacing: "-0.5px",
+    fontSize: "19px",
+    fontWeight: 900,
+    letterSpacing: "1.5px",
   },
-  brandSub: {
-    fontSize: "12px",
-    color: "#78837f",
+
+  brandSubtitle: {
+    fontSize: "11px",
+    opacity: 0.7,
     marginTop: "2px",
   },
-  topActions: {
+
+  topbarRight: {
     display: "flex",
-    gap: "10px",
+    alignItems: "center",
+    gap: "18px",
+    flexWrap: "wrap",
+    flexShrink: 0,
+    justifyContent: "flex-end",
   },
-  websiteButton: {
-    border: "1px solid #d8e0dd",
-    background: "#ffffff",
-    borderRadius: "9px",
-    padding: "10px 15px",
-    cursor: "pointer",
-    fontWeight: 600,
+
+  userEmail: {
+    fontSize: "13px",
+    opacity: 0.85,
   },
+
   logoutButton: {
-    border: "none",
-    background: "#17211f",
-    color: "#ffffff",
-    borderRadius: "9px",
-    padding: "10px 15px",
+    border:
+      "1px solid rgba(255,255,255,0.3)",
+    background:
+      "rgba(255,255,255,0.08)",
+    color: "#fff",
+    borderRadius: "8px",
+    padding: "9px 15px",
     cursor: "pointer",
     fontWeight: 600,
   },
-  layout: {
+
+  dashboard: {
     display: "flex",
-    minHeight: "calc(100vh - 76px)",
+    minHeight:
+      "calc(100vh - 72px)",
   },
+
   sidebar: {
     width: "245px",
+    background: "#062f3b",
+    borderRight:
+      "1px solid rgba(255,255,255,0.08)",
+    padding: "25px 15px",
     flexShrink: 0,
-    background: "#ffffff",
-    borderRight: "1px solid #e6ebe9",
-    padding: "22px 15px",
   },
-  adminBox: {
-    display: "flex",
-    gap: "11px",
-    alignItems: "center",
-    padding: "12px",
-    marginBottom: "22px",
-    borderBottom: "1px solid #edf0ef",
-    paddingBottom: "20px",
+
+  sidebarTitle: {
+    fontSize: "12px",
+    fontWeight: 800,
+    textTransform:
+      "uppercase",
+    letterSpacing: "1px",
+    color: "#7fa9b1",
+    padding:
+      "0 12px 12px",
   },
-  avatar: {
-    width: "40px",
-    height: "40px",
-    borderRadius: "50%",
-    background: "#173f35",
-    color: "#ffffff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: 700,
-  },
-  adminBoxStrong: {
-    display: "block",
-  },
-  nav: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "5px",
-  },
-  navButton: {
+
+  sidebarButton: {
+    width: "100%",
     border: "none",
     background: "transparent",
-    textAlign: "left",
     padding: "12px 13px",
-    borderRadius: "9px",
-    cursor: "pointer",
-    color: "#56615d",
+    borderRadius: "10px",
+    display: "flex",
+    alignItems: "center",
+    gap: "11px",
+    textAlign: "left",
     fontSize: "14px",
     fontWeight: 600,
+    color: "#c4dde1",
+    cursor: "pointer",
+    marginBottom: "4px",
   },
-  navButtonActive: {
-    background: "#e9f1ee",
-    color: "#173f35",
+
+  sidebarButtonActive: {
+    background: "linear-gradient(135deg, rgba(39, 205, 201, 0.20), rgba(13, 133, 151, 0.18))",
+    color: "#68e1dc",
+    boxShadow: "inset 3px 0 0 #45d7d2",
   },
+
+  sidebarStats: {
+    marginTop: "30px",
+    borderTop:
+      "1px solid rgba(255,255,255,0.10)",
+    paddingTop: "20px",
+  },
+
+  sidebarStat: {
+    display: "flex",
+    justifyContent:
+      "space-between",
+    padding: "9px 12px",
+    color: "#9fc0c5",
+    fontSize: "13px",
+  },
+
   main: {
     flex: 1,
-    padding: "30px",
+    padding: "32px",
     minWidth: 0,
+    background: "#ffffff",
   },
-  pageHeader: {
+
+  sectionHeader: {
     display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
+    alignItems: "flex-start",
+    justifyContent:
+      "space-between",
     gap: "20px",
     marginBottom: "25px",
+    flexWrap: "wrap",
+    position: "relative",
+    zIndex: 1,
   },
-  pageTitle: {
+
+  sectionTitle: {
     margin: 0,
     fontSize: "28px",
-    letterSpacing: "-0.6px",
+    fontWeight: 800,
+    color: "#0f2730",
   },
-  pageSubtitle: {
-    margin: "6px 0 0",
-    color: "#78837f",
+
+  sectionSubtitle: {
+    margin: "7px 0 0",
+    color: "#64748b",
     fontSize: "14px",
   },
-  success: {
-    padding: "13px 16px",
-    background: "#e8f5ed",
-    border: "1px solid #c9e7d4",
-    color: "#21663c",
-    borderRadius: "9px",
-    marginBottom: "18px",
-  },
-  error: {
-    padding: "13px 16px",
-    background: "#fff0f0",
-    border: "1px solid #f0cccc",
-    color: "#9b3030",
-    borderRadius: "9px",
-    marginBottom: "18px",
-  },
+
   statsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    gap: "16px",
-    marginBottom: "22px",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "15px",
+    marginBottom: "25px",
   },
+
   statCard: {
-    background: "#ffffff",
-    border: "1px solid #e6ebe9",
-    borderRadius: "13px",
-    padding: "20px",
-  },
-  statTitle: {
-    display: "block",
-    color: "#78837f",
-    fontSize: "13px",
-    marginBottom: "9px",
-  },
-  statValue: {
-    display: "block",
-    fontSize: "28px",
-  },
-  dashboardGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "20px",
-  },
-  panel: {
-    background: "#ffffff",
-    border: "1px solid #e6ebe9",
-    borderRadius: "13px",
-    overflow: "hidden",
-  },
-  panelHeader: {
-    padding: "19px 20px",
-    borderBottom: "1px solid #edf0ef",
-  },
-  panelTitle: {
-    margin: 0,
-    fontSize: "17px",
-  },
-  panelSubtitle: {
-    margin: "5px 0 0",
-    color: "#78837f",
-    fontSize: "13px",
-  },
-  quickActions: {
+    background: "#fff",
+    border:
+      "1px solid #e5e7eb",
+    borderRadius: "12px",
     padding: "18px",
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "11px",
-  },
-  quickButton: {
-    border: "1px solid #e3e9e6",
-    background: "#fafcfb",
-    borderRadius: "10px",
-    padding: "15px",
-    cursor: "pointer",
-    textAlign: "left",
-  },
-  recentItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px 18px",
-    borderBottom: "1px solid #f0f2f1",
-  },
-  recentImage: {
-    width: "48px",
-    height: "48px",
-    flexShrink: 0,
-    borderRadius: "8px",
-    background: "#f0f4f2",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  recentInfo: {
-    flex: 1,
-    minWidth: 0,
     display: "flex",
     flexDirection: "column",
-    gap: "3px",
+    gap: "8px",
   },
-  activeBadge: {
-    display: "inline-flex",
-    alignItems: "center",
-    width: "fit-content",
-    padding: "4px 8px",
-    borderRadius: "20px",
-    background: "#e8f5ed",
-    color: "#267044",
-    fontSize: "11px",
-    fontWeight: 700,
-  },
-  inactiveBadge: {
-    display: "inline-flex",
-    alignItems: "center",
-    width: "fit-content",
-    padding: "4px 8px",
-    borderRadius: "20px",
-    background: "#f0f1f1",
-    color: "#6c7471",
-    fontSize: "11px",
-    fontWeight: 700,
-  },
-  featuredText: {
-    color: "#9a6b13",
-    fontSize: "11px",
-    marginTop: "3px",
-  },
-  filters: {
+
+  toolbar: {
     display: "flex",
     gap: "12px",
     marginBottom: "18px",
   },
+
   searchInput: {
     flex: 1,
     minWidth: 0,
-    border: "1px solid #dce3e0",
-    background: "#ffffff",
+    border:
+      "1px solid #dbe2e8",
     borderRadius: "9px",
     padding: "12px 14px",
-    outline: "none",
     fontSize: "14px",
+    outline: "none",
+    background: "#fff",
   },
-  filterSelect: {
-    width: "230px",
-    border: "1px solid #dce3e0",
-    background: "#ffffff",
+
+  refreshButton: {
+    border:
+      "1px solid #dbe2e8",
+    background: "#fff",
     borderRadius: "9px",
-    padding: "12px 14px",
-    outline: "none",
-    fontSize: "14px",
-  },
-  tablePanel: {
-    background: "#ffffff",
-    border: "1px solid #e6ebe9",
-    borderRadius: "13px",
-    overflow: "hidden",
-  },
-  tableScroll: {
-    overflowX: "auto",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    minWidth: "850px",
-  },
-  th: {
-    textAlign: "left",
-    padding: "13px 16px",
-    fontSize: "11px",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-    color: "#78837f",
-    background: "#fafcfb",
-    borderBottom: "1px solid #e6ebe9",
-  },
-  td: {
-    padding: "13px 16px",
-    borderBottom: "1px solid #edf0ef",
-    fontSize: "13px",
-    verticalAlign: "middle",
-  },
-  productCell: {
-    display: "flex",
-    alignItems: "center",
-    gap: "11px",
-  },
-  productThumb: {
-    width: "58px",
-    height: "58px",
-    flexShrink: 0,
-    background: "#f1f5f3",
-    borderRadius: "8px",
-    overflow: "hidden",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  containImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "contain",
-    objectPosition: "center",
-    display: "block",
-  },
-  actionRow: {
-    display: "flex",
-    gap: "7px",
-    flexWrap: "wrap",
-  },
-  editButton: {
-    border: "1px solid #d6e2de",
-    background: "#ffffff",
-    color: "#245448",
-    borderRadius: "7px",
-    padding: "7px 10px",
+    padding: "0 16px",
     cursor: "pointer",
-    fontSize: "12px",
     fontWeight: 600,
+    color: "#475569",
   },
-  deleteButton: {
-    border: "1px solid #f0d1d1",
-    background: "#fff7f7",
-    color: "#a23838",
-    borderRadius: "7px",
-    padding: "7px 10px",
-    cursor: "pointer",
-    fontSize: "12px",
-    fontWeight: 600,
-  },
+
   primaryButton: {
     border: "none",
-    background: "#173f35",
-    color: "#ffffff",
+    background:
+      "linear-gradient(135deg, #087f8c, #0b6470)",
+    color: "#fff",
     borderRadius: "9px",
-    padding: "11px 16px",
+    padding: "11px 18px",
     cursor: "pointer",
     fontWeight: 700,
+    fontSize: "14px",
+    flexShrink: 0,
+    whiteSpace: "nowrap",
+    boxShadow:
+      "0 5px 14px rgba(8,127,140,0.18)",
   },
-  cancelButton: {
-    border: "1px solid #d9dfdd",
-    background: "#ffffff",
-    color: "#46504d",
+
+  secondaryButton: {
+    border:
+      "1px solid #dbe2e8",
+    background: "#fff",
+    color: "#475569",
     borderRadius: "9px",
-    padding: "11px 16px",
+    padding: "11px 18px",
     cursor: "pointer",
     fontWeight: 600,
   },
-  categoryGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: "17px",
-  },
-  categoryCard: {
-    background: "#ffffff",
-    border: "1px solid #e6ebe9",
+
+  tableWrapper: {
+    background: "#fff",
+    border:
+      "1px solid #e5e7eb",
     borderRadius: "13px",
-    overflow: "hidden",
+    overflow: "auto",
   },
-  categoryImage: {
-    height: "190px",
-    background: "#f1f5f3",
+
+  table: {
+    width: "100%",
+    borderCollapse:
+      "collapse",
+    minWidth: "1050px",
+  },
+
+  th: {
+    textAlign: "left",
+    padding: "14px 15px",
+    background: "#f8fafc",
+    borderBottom:
+      "1px solid #e5e7eb",
+    fontSize: "12px",
+    textTransform:
+      "uppercase",
+    letterSpacing: "0.5px",
+    color: "#64748b",
+  },
+
+  td: {
+    padding: "13px 15px",
+    borderBottom:
+      "1px solid #edf0f2",
+    verticalAlign:
+      "middle",
+    fontSize: "14px",
+  },
+
+  tableImage: {
+    width: "58px",
+    height: "58px",
+    objectFit: "cover",
+    borderRadius: "9px",
+    display: "block",
+  },
+
+  tableNoImage: {
+    width: "58px",
+    height: "58px",
+    borderRadius: "9px",
+    background: "#f1f5f9",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
+    color: "#94a3b8",
   },
-  categoryContent: {
-    padding: "15px",
+
+  fishName: {
+    fontWeight: 700,
+    color: "#17212b",
   },
-  categoryTitleRow: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: "10px",
-  },
-  categoryTitle: {
-    margin: 0,
-    fontSize: "16px",
-  },
-  categoryMeta: {
-    color: "#78837f",
+
+  smallText: {
+    color: "#94a3b8",
     fontSize: "12px",
-    marginTop: "6px",
+    marginTop: "4px",
   },
-  noImage: {
-    color: "#8b9591",
-    fontSize: "13px",
+
+  categoryBadge: {
+    display: "inline-flex",
+    background: "#edf8f9",
+    color: "#087f8c",
+    padding: "5px 9px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: 600,
   },
-  storageGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    gap: "17px",
+
+  statusBadge: {
+    display: "inline-flex",
+    padding: "5px 9px",
+    borderRadius: "999px",
+    fontSize: "11px",
+    fontWeight: 700,
   },
-  storageCard: {
-    background: "#ffffff",
-    border: "1px solid #e6ebe9",
-    borderRadius: "12px",
-    overflow: "hidden",
+
+  statusAvailable: {
+    background: "#e8f8ee",
+    color: "#15803d",
   },
-  storageImage: {
-    height: "190px",
-    background: "#f1f5f3",
-    overflow: "hidden",
+
+  statusOther: {
+    background: "#f1f5f9",
+    color: "#64748b",
   },
-  storageInfo: {
-    padding: "12px 14px",
+
+  actionButtons: {
     display: "flex",
-    flexDirection: "column",
-    gap: "4px",
+    gap: "7px",
   },
-  empty: {
-    padding: "45px 20px",
+
+  editButton: {
+    border:
+      "1px solid #cbd5e1",
+    background: "#fff",
+    color: "#334155",
+    borderRadius: "7px",
+    padding: "7px 10px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "12px",
+  },
+
+  deleteButton: {
+    border:
+      "1px solid #fecaca",
+    background: "#fff",
+    color: "#dc2626",
+    borderRadius: "7px",
+    padding: "7px 10px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "12px",
+  },
+
+  emptyState: {
+    background: "#fff",
+    border:
+      "1px dashed #cbd5e1",
+    borderRadius: "13px",
+    padding: "60px 20px",
     textAlign: "center",
-    color: "#7b8581",
-    background: "#ffffff",
-    border: "1px solid #e6ebe9",
-    borderRadius: "12px",
+    color: "#64748b",
   },
-  overlay: {
+
+  emptyIcon: {
+    fontSize: "45px",
+    marginBottom: "10px",
+  },
+
+  categoryGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fill, minmax(260px, 1fr))",
+    gap: "18px",
+  },
+
+  categoryCard: {
+    background: "#fff",
+    border:
+      "1px solid #e5e7eb",
+    borderRadius: "13px",
+    overflow: "hidden",
+  },
+
+  categoryImageWrapper: {
+    width: "100%",
+    height: "150px",
+    background: "#eef4f6",
+  },
+
+  categoryCardImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+
+  categoryPlaceholder: {
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "45px",
+  },
+
+  categoryCardContent: {
+    padding: "16px",
+  },
+
+  categoryCardTitle: {
+    margin: 0,
+    fontSize: "17px",
+    color: "#17212b",
+  },
+
+  categorySlug: {
+    color: "#94a3b8",
+    fontSize: "12px",
+    marginTop: "5px",
+  },
+
+  categoryActions: {
+    display: "flex",
+    gap: "8px",
+    marginTop: "15px",
+  },
+
+  modalOverlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(15, 25, 22, 0.52)",
+    background:
+      "rgba(2,15,20,0.68)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     padding: "20px",
-    zIndex: 100,
+    zIndex: 1000,
+    overflowY: "auto",
   },
+
   modal: {
     width: "100%",
-    maxWidth: "760px",
-    maxHeight: "92vh",
-    overflow: "auto",
-    background: "#ffffff",
-    borderRadius: "15px",
-    boxShadow: "0 25px 80px rgba(0,0,0,0.25)",
+    maxWidth: "900px",
+    maxHeight: "94vh",
+    overflowY: "auto",
+    background: "#fff",
+    borderRadius: "16px",
+    padding: "25px",
+    boxShadow:
+      "0 30px 90px rgba(0,0,0,0.35)",
   },
+
+  modalSmall: {
+    width: "100%",
+    maxWidth: "540px",
+    maxHeight: "94vh",
+    overflowY: "auto",
+    background: "#fff",
+    borderRadius: "16px",
+    padding: "25px",
+    boxShadow:
+      "0 30px 90px rgba(0,0,0,0.35)",
+  },
+
   modalHeader: {
     display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "19px 22px",
-    borderBottom: "1px solid #e8ecea",
-    position: "sticky",
-    top: 0,
-    background: "#ffffff",
-    zIndex: 2,
+    alignItems: "flex-start",
+    justifyContent:
+      "space-between",
+    marginBottom: "24px",
   },
+
   modalTitle: {
     margin: 0,
-    fontSize: "20px",
+    fontSize: "22px",
+    color: "#102b34",
   },
+
+  modalSubtitle: {
+    color: "#94a3b8",
+    fontSize: "13px",
+    marginTop: "5px",
+  },
+
   closeButton: {
+    width: "34px",
+    height: "34px",
     border: "none",
-    background: "transparent",
-    fontSize: "27px",
-    lineHeight: 1,
+    borderRadius: "50%",
+    background: "#f1f5f9",
+    color: "#475569",
+    fontSize: "23px",
     cursor: "pointer",
-    color: "#67716e",
+    lineHeight: 1,
   },
-  modalBody: {
-    padding: "22px",
-  },
+
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "15px",
+    gridTemplateColumns:
+      "repeat(2, minmax(0, 1fr))",
+    gap: "25px",
   },
-  field: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "7px",
-    marginBottom: "15px",
+
+  formColumn: {
+    minWidth: 0,
   },
-  fieldLabel: {
+
+  label: {
+    display: "block",
     fontSize: "12px",
     fontWeight: 700,
-    color: "#48534f",
+    color: "#31545d",
+    marginBottom: "7px",
+    marginTop: "15px",
   },
+
   input: {
     width: "100%",
     boxSizing: "border-box",
-    border: "1px solid #dce3e0",
-    borderRadius: "8px",
-    padding: "11px 12px",
+    border:
+      "1px solid #c9dfe3",
+    borderRadius: "10px",
+    padding: "12px 13px",
     fontSize: "14px",
     outline: "none",
     background: "#ffffff",
+    color: "#17343c",
   },
+
   textarea: {
     width: "100%",
     boxSizing: "border-box",
-    border: "1px solid #dce3e0",
+    border:
+      "1px solid #dbe2e8",
     borderRadius: "8px",
     padding: "11px 12px",
     fontSize: "14px",
@@ -1955,114 +2938,167 @@ const styles = {
     resize: "vertical",
     fontFamily: "inherit",
   },
-  fileInput: {
+
+  imageUploadBox: {
     width: "100%",
-    boxSizing: "border-box",
-    border: "1px solid #dce3e0",
-    borderRadius: "8px",
-    padding: "8px",
-    fontSize: "12px",
-    background: "#ffffff",
+    height: "230px",
+    borderRadius: "10px",
+    background: "#f1f5f9",
+    overflow: "hidden",
+    marginBottom: "10px",
   },
-  currentImageBox: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "10px",
-    border: "1px solid #e6ebe9",
-    borderRadius: "9px",
-    marginBottom: "15px",
-    color: "#68736f",
-    fontSize: "12px",
-  },
+
   previewImage: {
-    width: "75px",
-    height: "75px",
+    width: "100%",
+    height: "100%",
     objectFit: "contain",
-    background: "#f2f5f4",
-    borderRadius: "7px",
   },
-  selectedFile: {
-    padding: "10px 12px",
-    background: "#edf6f2",
-    color: "#275b4d",
-    borderRadius: "8px",
-    fontSize: "12px",
-    marginBottom: "15px",
-  },
-  checkboxRow: {
-    display: "flex",
-    gap: "22px",
-    flexWrap: "wrap",
-    margin: "5px 0 18px",
-  },
-  checkboxLabel: {
-    display: "flex",
-    alignItems: "center",
-    gap: "7px",
-    fontSize: "13px",
-    cursor: "pointer",
-  },
-  modalActions: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "9px",
-    borderTop: "1px solid #edf0ef",
-    paddingTop: "18px",
-  },
-  loginScreen: {
-    minHeight: "100vh",
-    background: "#f3f6f4",
+
+  noImage: {
+    width: "100%",
+    minHeight: "100px",
+    background: "#f1f5f9",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "20px",
+    borderRadius: "9px",
+    color: "#94a3b8",
+    fontSize: "13px",
   },
-  loginCard: {
+
+  fileInput: {
     width: "100%",
-    maxWidth: "410px",
-    background: "#ffffff",
-    border: "1px solid #e4eae7",
-    borderRadius: "15px",
-    padding: "32px",
-    boxShadow: "0 15px 50px rgba(0,0,0,0.07)",
-  },
-  loginLogo: {
-    fontSize: "28px",
-    fontWeight: 800,
-    textAlign: "center",
-  },
-  loginSubtitle: {
-    textAlign: "center",
-    color: "#78837f",
-    marginBottom: "28px",
+    fontSize: "13px",
     marginTop: "5px",
   },
-  loginLabel: {
+
+  helperText: {
+    color: "#94a3b8",
+    fontSize: "11px",
+    marginTop: "7px",
+  },
+
+  stockHelper: {
+    color: "#94a3b8",
+    fontSize: "11px",
+    marginTop: "7px",
+  },
+
+  modalFooter: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px",
+    borderTop:
+      "1px solid #e5e7eb",
+    marginTop: "25px",
+    paddingTop: "18px",
+  },
+
+  categoryPreview: {
+    width: "100%",
+    height: "170px",
+    objectFit: "cover",
+    borderRadius: "9px",
     display: "block",
-    fontSize: "12px",
-    fontWeight: 700,
-    marginBottom: "7px",
+    marginBottom: "10px",
+  },
+
+  storageInfo: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "15px",
+    marginBottom: "25px",
+  },
+
+  storageInfoCard: {
+    background: "#fff",
+    border:
+      "1px solid #e5e7eb",
+    borderRadius: "12px",
+    padding: "18px",
+  },
+
+  storageGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fill, minmax(210px, 1fr))",
+    gap: "18px",
+  },
+
+  storageCard: {
+    background: "#fff",
+    border:
+      "1px solid #e5e7eb",
+    borderRadius: "12px",
+    overflow: "hidden",
+  },
+
+  storageImage: {
+    width: "100%",
+    height: "180px",
+    objectFit: "cover",
+    display: "block",
+  },
+
+  storageCardBody: {
+    padding: "13px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+  },
+
+  loadingPage: {
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "15px",
+    background: "#f5f8fa",
+    color: "#475569",
+    fontFamily:
+      "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+  },
+
+  loadingSpinner: {
+    width: "30px",
+    height: "30px",
+    border:
+      "3px solid #dbeafe",
+    borderTopColor:
+      "#087f8c",
+    borderRadius: "50%",
+    animation:
+      "spin 1s linear infinite",
+  },
+
+  errorBox: {
+    background: "#fef2f2",
+    color: "#b91c1c",
+    border:
+      "1px solid #fecaca",
+    padding: "10px 12px",
+    borderRadius: "8px",
+    fontSize: "13px",
     marginTop: "15px",
   },
-  loginButton: {
-    width: "100%",
-    marginTop: "20px",
-    border: "none",
-    background: "#173f35",
-    color: "#ffffff",
-    borderRadius: "9px",
-    padding: "13px",
-    cursor: "pointer",
-    fontWeight: 700,
-    fontSize: "14px",
-  },
-  loginError: {
-    marginTop: "12px",
-    padding: "10px",
-    background: "#fff0f0",
-    color: "#9b3030",
-    borderRadius: "7px",
-    fontSize: "12px",
+
+  globalError: {
+    position: "fixed",
+    top: "15px",
+    left: "50%",
+    transform:
+      "translateX(-50%)",
+    zIndex: 2000,
+    background: "#fee2e2",
+    color: "#991b1b",
+    border:
+      "1px solid #fecaca",
+    borderRadius: "8px",
+    padding: "10px 15px",
+    fontSize: "13px",
+    boxShadow:
+      "0 8px 25px rgba(0,0,0,0.15)",
   },
 };

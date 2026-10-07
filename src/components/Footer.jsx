@@ -1,90 +1,79 @@
-import { Instagram, Youtube, ArrowUpRight } from "lucide-react";
+import { Instagram, Youtube, ArrowUpRight, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-import { site, categories } from "../data/site";
+import { site } from "../data/site";
 import Logo from "./Logo";
 
 export default function Footer() {
   return (
-    <footer>
-      <div className="container foot-grid">
-        <div>
+    <footer className="site-footer">
+      <div className="container footer-main">
+        <div className="footer-brand">
           <Logo />
 
           <p>
-            Imported premium Betta breeding pairs,
+            Premium aquarium fishes,
             <br />
-            selected for serious Betta enthusiasts.
-            <br />
-            {site.city}
+            selected for aquarium enthusiasts.
           </p>
 
           <div className="social">
             <a
               href={site.instagram}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
             >
               <Instagram />
-              Instagram
+              <span>Instagram</span>
             </a>
 
             <a
               href={site.youtube}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
+              aria-label="YouTube"
             >
               <Youtube />
-              YouTube
+              <span>YouTube</span>
             </a>
           </div>
-
-          <p>
-            <strong>Enquiries</strong>
-            <br />
-            {site.onlineHours}
-            <br />
-            <strong>Location</strong>
-            <br />
-            {site.city}
-          </p>
         </div>
 
-        <div>
+        <div className="footer-links">
           <label>Explore</label>
 
+          <Link to="/">Home</Link>
           <Link to="/collection">Collection</Link>
-          <Link to="/about">Our Story</Link>
-          <Link to="/contact">Contact</Link>
+          <Link to="/about">About</Link>
+          <Link to="/visit">Visit</Link>
         </div>
 
-        <div>
-          <label>Collection</label>
-
-          {categories.map((item) => (
-            <Link
-              key={item.id}
-              to={`/collection/${item.id}`}
-            >
-              {item.name}
-            </Link>
-          ))}
-        </div>
-
-        <div>
-          <label>Private enquiries</label>
-
-          <p>
-            For current availability and imported premium
-            Betta breeding pairs, contact us directly.
-          </p>
+        <div className="footer-contact">
+          <label>Contact</label>
 
           <a
-            className="gold-link"
             href={`https://wa.me/${site.whatsapp}`}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
           >
-            WhatsApp us
+            <MessageCircle />
+            <span>
+              <small>WHATSAPP</small>
+              <strong>86399 55181</strong>
+            </span>
+            <ArrowUpRight />
+          </a>
+
+          <a
+            href={site.instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Instagram />
+            <span>
+              <small>INSTAGRAM</small>
+              <strong>@mr.aquatic.vizag</strong>
+            </span>
             <ArrowUpRight />
           </a>
         </div>
@@ -96,7 +85,7 @@ export default function Footer() {
         </span>
 
         <span>
-          {site.city} · Imported Premium Bettas
+          {site.city} · Premium Aquarium Fishes
         </span>
       </div>
     </footer>

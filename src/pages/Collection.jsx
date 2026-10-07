@@ -1,362 +1,1871 @@
-import "./collection.css";
-import { Search, ArrowUpRight, MessageCircle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../lib/supabase";
-import { site } from "../data/site";
 
-function formatPrice(price) {
-  if (price === null || price === undefined || price === "") {
-    return "Price on enquiry";
+import { supabase } from "../lib/supabase";
+
+import "./collection.css";
+
+/* =========================================================
+
+   MR. AQUATIC VIZAG
+
+   COLLECTION
+
+   Supabase:
+
+   - Table: products
+
+   - Table: categories
+
+   - Storage bucket: products
+
+   image_url supports:
+
+   - Full public URL
+
+   - fish/example.jpeg
+
+   - products/fish/example.jpeg
+
+   ========================================================= */
+
+/* =========================================================
+
+   CATEGORIES
+
+   ========================================================= */
+
+const CATEGORIES = [
+
+  "All",
+
+  "Imported Bettas",
+
+  "Bettas",
+
+  "Guppies",
+
+  "Arwanas",
+
+  "Flowerhorns",
+
+  "Alligator ghar",
+
+  "Imported Mollies",
+
+  "Koi's",
+
+  "Albino plecos",
+
+  "Polar Parrots pair",
+
+  "Green veltail zebras",
+
+  "Tiger Barbs",
+
+  "Tetras",
+
+  "Shrimp",
+
+  "Other",
+
+  "Plants",
+
+];
+
+/* =========================================================
+
+   HELPERS
+
+   ========================================================= */
+
+const normalize = (value) =>
+
+  String(value ?? "")
+
+    .trim()
+
+    .toLowerCase()
+
+    .replace(/\s+/g, " ");
+
+/* =========================================================
+
+   PRICE FORMATTER
+
+   ========================================================= */
+
+const formatPrice = (price) => {
+
+  if (
+
+    price === null ||
+
+    price === undefined ||
+
+    price === ""
+
+  ) {
+
+    return "";
+
   }
 
   const number = Number(price);
 
   if (Number.isNaN(number)) {
-    return "Price on enquiry";
+
+    return `₹${price}`;
+
   }
 
   return `₹${number.toLocaleString("en-IN")}`;
-}
 
-function isSold(fish) {
-  const value = String(fish.availability || "").toLowerCase();
+};
 
-  return (
-    value.includes("sold") ||
-    value.includes("unavailable") ||
-    value.includes("out of stock")
-  );
-}
+/* =========================================================
 
-function whatsappUrl(fish) {
-  const message = [
-    "Hello,",
-    "",
-    `I am interested in ${fish.name}.`,
-    fish.price ? `Price: ${formatPrice(fish.price)}` : "",
-    fish.size ? `Size: ${fish.size}` : "",
-    "",
-    "Please share availability details.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+   IMAGE URL HELPER
 
-  return `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(message)}`;
-}
+   ========================================================= */
 
-function FishCard({ fish }) {
-  const sold = isSold(fish);
+const getFishImageUrl = (imagePath) => {
 
-  return (
-    <article className="collection-card">
-      <a
-        className="collection-card-image"
-        href={whatsappUrl(fish)}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={`Enquire about ${fish.name}`}
-      >
-        {fish.image_url ? (
-          <img
-            src={fish.image_url}
-            alt={fish.name}
-            loading="lazy"
-          />
-        ) : (
-          <div className="collection-image-placeholder">
-            <span>REBEL PETS</span>
-          </div>
-        )}
+  if (!imagePath) {
 
-        <span className={`collection-status ${sold ? "sold" : ""}`}>
-          <span className="status-dot" />
-          {sold ? "Sold Out" : "Available"}
-        </span>
+    return "";
 
-        <span className="collection-image-arrow">
-          <ArrowUpRight size={17} />
-        </span>
-      </a>
+  }
 
-      <div className="collection-card-content">
-        <div className="collection-card-top">
-          <span>Imported Betta</span>
+  let storagePath = String(imagePath).trim();
 
-          <span>{fish.size || "Breeding Pair"}</span>
-        </div>
+  if (!storagePath) {
 
-        <h3>{fish.name}</h3>
+    return "";
 
-        {fish.description && (
-          <p>
-            {fish.description.length > 90
-              ? `${fish.description.slice(0, 90)}…`
-              : fish.description}
-          </p>
-        )}
+  }
 
-        <div className="collection-card-bottom">
-          <strong>{formatPrice(fish.price)}</strong>
+  /* -------------------------------------------------------
 
-          <a
-            href={whatsappUrl(fish)}
-            target="_blank"
-            rel="noreferrer"
-            className="collection-enquire"
-          >
-            <MessageCircle size={15} />
-            Enquire
-          </a>
-        </div>
-      </div>
-    </article>
-  );
-}
+     Already a complete URL
 
-function SkeletonCard() {
-  return (
-    <div className="collection-card collection-skeleton">
-      <div className="skeleton-image" />
+     ------------------------------------------------------- */
 
-      <div className="skeleton-content">
-        <span />
-        <span />
-        <span />
-      </div>
-    </div>
-  );
-}
+  if (
 
-export default function Collection() {
-  const [fish, setFish] = useState([]);
-  const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+    storagePath.startsWith("http://") ||
 
-  useEffect(() => {
-    let mounted = true;
+    storagePath.startsWith("https://") ||
 
-    async function loadInventory() {
-      setLoading(true);
-      setError("");
+    storagePath.startsWith("data:image/")
 
-      if (!supabase) {
-        if (mounted) {
-          setLoading(false);
-          setError(
-            "Inventory connection is not configured."
-          );
-        }
+  ) {
 
-        return;
-      }
+    return storagePath;
 
-      const { data, error: fishError } = await supabase
-        .from("fish")
-        .select(
-          "id,name,slug,description,size,origin,price,price_label,availability,image_url,is_featured,is_active,created_at"
-        )
-        .eq("is_active", true)
-        .order("created_at", {
-          ascending: false,
-        });
+  }
 
-      if (!mounted) {
-        return;
-      }
+  /* -------------------------------------------------------
 
-      if (fishError) {
-        console.error(fishError);
+     Remove leading slash
 
-        setError(
-          "We couldn't load the Betta collection right now. Please try again."
+     ------------------------------------------------------- */
+
+  storagePath = storagePath.replace(/^\/+/, "");
+
+  /* -------------------------------------------------------
+
+     Remove bucket name if database contains:
+
+     products/fish/example.jpeg
+
+     Bucket itself is already "products".
+
+     ------------------------------------------------------- */
+
+  if (storagePath.startsWith("products/")) {
+
+    storagePath = storagePath.slice(
+
+      "products/".length
+
+    );
+
+  }
+
+  /* -------------------------------------------------------
+
+     Generate public URL from Supabase Storage
+
+     ------------------------------------------------------- */
+
+  const { data } = supabase.storage
+
+  .from("aquaa-bark-images")
+
+  .getPublicUrl(storagePath);
+
+  return data?.publicUrl || "";
+
+};
+
+/* =========================================================
+
+   CATEGORY HELPER
+
+   ========================================================= */
+
+const getProductCategoryName = (
+
+  product,
+
+  categories
+
+) => {
+
+  /* -------------------------------------------------------
+
+     1. Try category_id
+
+     ------------------------------------------------------- */
+
+  if (
+
+    product.category_id !== undefined &&
+
+    product.category_id !== null &&
+
+    product.category_id !== ""
+
+  ) {
+
+    const categoryById = categories.find(
+
+      (category) =>
+
+        String(category.id) ===
+
+        String(product.category_id)
+
+    );
+
+    if (categoryById) {
+
+      return categoryById.name;
+
+    }
+
+  }
+
+  /* -------------------------------------------------------
+
+     2. Try category text
+
+     ------------------------------------------------------- */
+
+  if (
+
+    product.category !== undefined &&
+
+    product.category !== null &&
+
+    String(product.category).trim() !== ""
+
+  ) {
+
+    const productCategory =
+
+      normalize(product.category);
+
+    const matchingCategory =
+
+      categories.find((categoryItem) => {
+
+        const categoryName =
+
+          normalize(categoryItem.name);
+
+        const categorySlug =
+
+          normalize(categoryItem.slug);
+
+        return (
+
+          categoryName === productCategory ||
+
+          categorySlug === productCategory
+
         );
 
-        setLoading(false);
-        return;
+      });
+
+    if (matchingCategory) {
+
+      return matchingCategory.name;
+
+    }
+
+    /*
+
+      If the product already contains a category
+
+      name that isn't currently in the categories
+
+      table, keep the product's own category.
+
+    */
+
+    return String(product.category).trim();
+
+  }
+
+  /* -------------------------------------------------------
+
+     3. No category
+
+     ------------------------------------------------------- */
+
+  return "Other";
+
+};
+
+/* =========================================================
+
+   COMPONENT
+
+   ========================================================= */
+
+export default function Collection() {
+
+  const [fish, setFish] = useState([]);
+
+  const [categories, setCategories] =
+
+    useState([]);
+
+  const [activeCategory, setActiveCategory] =
+
+    useState("All");
+
+  const [search, setSearch] =
+
+    useState("");
+
+  const [loading, setLoading] =
+
+    useState(true);
+
+  const [error, setError] =
+
+    useState("");
+
+  /* =======================================================
+
+     LOAD PRODUCTS + CATEGORIES
+
+     ======================================================= */
+
+  useEffect(() => {
+
+    let active = true;
+
+    const loadCollection = async () => {
+
+      setLoading(true);
+
+      setError("");
+
+      try {
+
+        const [
+
+          productsResult,
+
+          categoriesResult,
+
+        ] = await Promise.all([
+
+          /* -----------------------------------------------
+
+             PRODUCTS
+
+             ----------------------------------------------- */
+
+          supabase
+
+            .from("products")
+
+            .select("*")
+
+            .order("created_at", {
+
+              ascending: false,
+
+            }),
+
+          /* -----------------------------------------------
+
+             CATEGORIES
+
+             ----------------------------------------------- */
+
+          supabase
+
+            .from("categories")
+
+            .select("*")
+
+            .order("name", {
+
+              ascending: true,
+
+            }),
+
+        ]);
+
+        if (!active) {
+
+          return;
+
+        }
+
+        /* =================================================
+
+           PRODUCTS
+
+           ================================================= */
+
+        if (productsResult.error) {
+
+          console.error(
+
+            "Supabase products error:",
+
+            productsResult.error
+
+          );
+
+          setFish([]);
+
+          setError(
+
+            "Unable to load fish collection."
+
+          );
+
+        } else {
+
+          console.log(
+
+            "Products loaded:",
+
+            productsResult.data
+
+          );
+
+          console.log(
+
+            "Number of products:",
+
+            productsResult.data?.length || 0
+
+          );
+
+          setFish(
+
+            productsResult.data || []
+
+          );
+
+        }
+
+        /* =================================================
+
+           CATEGORIES
+
+           ================================================= */
+
+        if (categoriesResult.error) {
+
+          console.error(
+
+            "Supabase categories error:",
+
+            categoriesResult.error
+
+          );
+
+          /*
+
+            Categories are not required for the
+
+            products themselves to appear.
+
+          */
+
+          setCategories([]);
+
+        } else {
+
+          console.log(
+
+            "Categories loaded:",
+
+            categoriesResult.data
+
+          );
+
+          setCategories(
+
+            categoriesResult.data || []
+
+          );
+
+        }
+
+        /* =================================================
+
+           BOTH FAILED
+
+           ================================================= */
+
+        if (
+
+          productsResult.error &&
+
+          categoriesResult.error
+
+        ) {
+
+          setError(
+
+            "Unable to load the aquarium collection."
+
+          );
+
+        }
+
+      } catch (loadError) {
+
+        console.error(
+
+          "Collection loading error:",
+
+          loadError
+
+        );
+
+        if (active) {
+
+          setFish([]);
+
+          setCategories([]);
+
+          setError(
+
+            "Unable to load the aquarium collection."
+
+          );
+
+        }
+
       }
 
-      setFish(data || []);
-      setLoading(false);
-    }
+      if (active) {
 
-    loadInventory();
+        setLoading(false);
+
+      }
+
+    };
+
+    loadCollection();
+
+    /* =====================================================
+
+       REALTIME PRODUCTS
+
+       ===================================================== */
+
+    const productsChannel = supabase
+
+      .channel(
+
+        "collection-products-live"
+
+      )
+
+      .on(
+
+        "postgres_changes",
+
+        {
+
+          event: "*",
+
+          schema: "public",
+
+          table: "products",
+
+        },
+
+        (payload) => {
+
+          if (!active) {
+
+            return;
+
+          }
+
+          console.log(
+
+            "Products realtime update:",
+
+            payload
+
+          );
+
+          /* ---------------------------------------------
+
+             INSERT
+
+             --------------------------------------------- */
+
+          if (
+
+            payload.eventType ===
+
+            "INSERT"
+
+          ) {
+
+            setFish((current) => {
+
+              const exists =
+
+                current.some(
+
+                  (item) =>
+
+                    item.id ===
+
+                    payload.new.id
+
+                );
+
+              if (exists) {
+
+                return current;
+
+              }
+
+              return [
+
+                payload.new,
+
+                ...current,
+
+              ];
+
+            });
+
+            return;
+
+          }
+
+          /* ---------------------------------------------
+
+             UPDATE
+
+             --------------------------------------------- */
+
+          if (
+
+            payload.eventType ===
+
+            "UPDATE"
+
+          ) {
+
+            setFish((current) => {
+
+              const exists =
+
+                current.some(
+
+                  (item) =>
+
+                    item.id ===
+
+                    payload.new.id
+
+                );
+
+              if (!exists) {
+
+                return [
+
+                  payload.new,
+
+                  ...current,
+
+                ];
+
+              }
+
+              return current.map(
+
+                (item) =>
+
+                  item.id ===
+
+                  payload.new.id
+
+                    ? payload.new
+
+                    : item
+
+              );
+
+            });
+
+            return;
+
+          }
+
+          /* ---------------------------------------------
+
+             DELETE
+
+             --------------------------------------------- */
+
+          if (
+
+            payload.eventType ===
+
+            "DELETE"
+
+          ) {
+
+            setFish((current) =>
+
+              current.filter(
+
+                (item) =>
+
+                  item.id !==
+
+                  payload.old.id
+
+              )
+
+            );
+
+          }
+
+        }
+
+      )
+
+      .subscribe();
+
+    /* =====================================================
+
+       REALTIME CATEGORIES
+
+       ===================================================== */
+
+    const categoriesChannel =
+
+      supabase
+
+        .channel(
+
+          "collection-categories-live"
+
+        )
+
+        .on(
+
+          "postgres_changes",
+
+          {
+
+            event: "*",
+
+            schema: "public",
+
+            table: "categories",
+
+          },
+
+          async () => {
+
+            if (!active) {
+
+              return;
+
+            }
+
+            const result =
+
+              await supabase
+
+                .from("categories")
+
+                .select("*")
+
+                .order("name", {
+
+                  ascending: true,
+
+                });
+
+            if (!active) {
+
+              return;
+
+            }
+
+            if (!result.error) {
+
+              setCategories(
+
+                result.data || []
+
+              );
+
+            }
+
+          }
+
+        )
+
+        .subscribe();
+
+    /* =====================================================
+
+       CLEANUP
+
+       ===================================================== */
 
     return () => {
-      mounted = false;
+
+      active = false;
+
+      supabase.removeChannel(
+
+        productsChannel
+
+      );
+
+      supabase.removeChannel(
+
+        categoriesChannel
+
+      );
+
     };
+
   }, []);
 
-  /*
-   * Real-time client-side search.
-   *
-   * Searches through all useful product fields so customers
-   * can find a Betta by variety, name, origin, description,
-   * size, availability or price label.
-   */
-  const filteredFish = useMemo(() => {
-    const search = query.trim().toLowerCase();
+  /* =======================================================
 
-    if (!search) {
-      return fish;
-    }
+     CATEGORY LOOKUP
 
-    return fish.filter((item) => {
-      const searchableText = [
-        item.name,
-        item.slug,
-        item.description,
-        item.size,
-        item.origin,
-        item.price_label,
-        item.availability,
-        "betta",
-        "breeding pair",
-        "imported betta",
-        "imported breeding pair",
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+     ======================================================= */
 
-      return searchableText.includes(search);
-    });
-  }, [fish, query]);
+  const categoryMap = useMemo(() => {
 
-  const clearSearch = () => {
-    setQuery("");
-  };
+    const map = new Map();
+
+    categories.forEach(
+
+      (category) => {
+
+        map.set(
+
+          String(category.id),
+
+          category
+
+        );
+
+      }
+
+    );
+
+    return map;
+
+  }, [categories]);
+
+  /* =======================================================
+
+     ADD CATEGORY INFORMATION TO PRODUCTS
+
+     ======================================================= */
+
+  const fishWithCategories =
+
+    useMemo(() => {
+
+      return fish.map((item) => {
+
+        let category = null;
+
+        /* -----------------------------------------------
+
+           Try category_id first
+
+           ----------------------------------------------- */
+
+        if (
+
+          item.category_id !==
+
+            undefined &&
+
+          item.category_id !== null &&
+
+          item.category_id !== ""
+
+        ) {
+
+          category =
+
+            categoryMap.get(
+
+              String(
+
+                item.category_id
+
+              )
+
+            );
+
+        }
+
+        /* -----------------------------------------------
+
+           Try product.category
+
+           ----------------------------------------------- */
+
+        if (!category) {
+
+          const productCategory =
+
+            getProductCategoryName(
+
+              item,
+
+              categories
+
+            );
+
+          category = categories.find(
+
+            (categoryItem) =>
+
+              normalize(
+
+                categoryItem.name
+
+              ) ===
+
+                normalize(
+
+                  productCategory
+
+                ) ||
+
+              normalize(
+
+                categoryItem.slug
+
+              ) ===
+
+                normalize(
+
+                  productCategory
+
+                )
+
+          );
+
+        }
+
+        const categoryName =
+
+          category?.name ||
+
+          getProductCategoryName(
+
+            item,
+
+            categories
+
+          );
+
+        const categorySlug =
+
+          category?.slug ||
+
+          normalize(categoryName);
+
+        return {
+
+          ...item,
+
+          categoryName:
+
+            categoryName || "Other",
+
+          categorySlug:
+
+            categorySlug || "other",
+
+        };
+
+      });
+
+    }, [
+
+      fish,
+
+      categories,
+
+      categoryMap,
+
+    ]);
+
+  /* =======================================================
+
+     FILTER + SEARCH
+
+     ======================================================= */
+
+  const filteredFish =
+
+    useMemo(() => {
+
+      const query =
+
+        normalize(search);
+
+      const selectedCategory =
+
+        normalize(activeCategory);
+
+      return fishWithCategories.filter(
+
+        (item) => {
+
+          const name =
+
+            normalize(item.name);
+
+          const categoryName =
+
+            normalize(
+
+              item.categoryName
+
+            );
+
+          const categorySlug =
+
+            normalize(
+
+              item.categorySlug
+
+            );
+
+          const description =
+
+            normalize(
+
+              item.description
+
+            );
+
+          const category =
+
+            normalize(
+
+              item.category
+
+            );
+
+          const price =
+
+            normalize(item.price);
+
+          /* ---------------------------------------------
+
+             CATEGORY MATCH
+
+             --------------------------------------------- */
+
+          /*
+
+            IMPORTANT:
+
+            When "All" is selected, do not check
+
+            category at all.
+
+            This guarantees every product returned
+
+            from Supabase can appear.
+
+          */
+
+          const matchesCategory =
+
+            activeCategory ===
+
+              "All"
+
+              ? true
+
+              : categoryName ===
+
+                  selectedCategory ||
+
+                categorySlug ===
+
+                  selectedCategory ||
+
+                category ===
+
+                  selectedCategory;
+
+          /* ---------------------------------------------
+
+             SEARCH MATCH
+
+             --------------------------------------------- */
+
+          const matchesSearch =
+
+            query.length === 0 ||
+
+            name.includes(query) ||
+
+            categoryName.includes(query) ||
+
+            categorySlug.includes(query) ||
+
+            category.includes(query) ||
+
+            description.includes(query) ||
+
+            price.includes(query);
+
+          return (
+
+            matchesCategory &&
+
+            matchesSearch
+
+          );
+
+        }
+
+      );
+
+    }, [
+
+      fishWithCategories,
+
+      activeCategory,
+
+      search,
+
+    ]);
+
+  /* =======================================================
+
+     DEBUG
+
+     ======================================================= */
+
+  useEffect(() => {
+
+    console.log(
+
+      "Collection state:",
+
+      {
+
+        totalProducts:
+
+          fish.length,
+
+        totalCategories:
+
+          categories.length,
+
+        activeCategory,
+
+        search,
+
+        filteredProducts:
+
+          filteredFish.length,
+
+      }
+
+    );
+
+  }, [
+
+    fish.length,
+
+    categories.length,
+
+    activeCategory,
+
+    search,
+
+    filteredFish.length,
+
+  ]);
+
+  /* =======================================================
+
+     RENDER
+
+     ======================================================= */
 
   return (
-    <main className="collection-page">
-      <section className="collection-header">
-        <div className="collection-container">
-          <div className="collection-heading">
-            <div>
-              <span className="collection-eyebrow">
-                REBEL PETS COLLECTION
-              </span>
 
-              <h1>
-                Imported <em>Betta breeding pairs.</em>
-              </h1>
-            </div>
+    <section
 
-            <p>
-              Explore our collection of imported rare Betta
-              breeding pairs. Search by variety, colour,
-              pattern, type or any other available detail.
-            </p>
-          </div>
+      id="collection"
 
-          <div className="collection-controls">
-            <div className="category-filter">
+      className="collection-page"
+
+    >
+
+      {/* ==================================================
+
+          PREMIUM BACKGROUND
+
+          ================================================== */}
+
+      <div
+
+        className="collection-background"
+
+        aria-hidden="true"
+
+      />
+
+      <div
+
+        className="collection-overlay"
+
+        aria-hidden="true"
+
+      />
+
+      {/* ==================================================
+
+          CONTENT
+
+          ================================================== */}
+
+      <div className="collection-content">
+
+        {/* =================================================
+
+            SEARCH
+
+            ================================================= */}
+
+        <div className="collection-search-wrapper">
+
+          <div className="collection-search">
+
+            <span
+
+              className="collection-search-icon"
+
+              aria-hidden="true"
+
+            >
+
+              ⌕
+
+            </span>
+
+            <input
+
+              type="search"
+
+              value={search}
+
+              onChange={(event) =>
+
+                setSearch(
+
+                  event.currentTarget.value
+
+                )
+
+              }
+
+              onInput={(event) =>
+
+                setSearch(
+
+                  event.currentTarget.value
+
+                )
+
+              }
+
+              placeholder="Search fish or category..."
+
+              aria-label="Search fish or category"
+
+              autoComplete="off"
+
+            />
+
+            {search && (
+
               <button
+
                 type="button"
-                className="category-pill active"
+
+                className="collection-search-clear"
+
+                onClick={() =>
+
+                  setSearch("")
+
+                }
+
+                aria-label="Clear search"
+
               >
-                Imported Premium Bettas
-                <span>{fish.length}</span>
+
+                ×
+
               </button>
-            </div>
 
-            <div className="collection-search-row">
-              <div className="collection-search-box">
-                <Search size={19} />
+            )}
 
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(event) =>
-                    setQuery(event.target.value)
-                  }
-                  placeholder="Search Betta varieties, names, patterns..."
-                  aria-label="Search imported Betta breeding pairs"
-                />
-
-                {query && (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    aria-label="Clear search"
-                  >
-                    <X size={17} />
-                  </button>
-                )}
-              </div>
-
-              <div className="collection-result-count">
-                <span>{filteredFish.length}</span>
-
-                {filteredFish.length === 1
-                  ? " breeding pair"
-                  : " breeding pairs"}
-              </div>
-            </div>
           </div>
+
         </div>
-      </section>
 
-      <section className="collection-gallery">
-        <div className="collection-container">
-          {loading ? (
-            <div className="collection-grid">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <SkeletonCard key={index} />
-              ))}
-            </div>
-          ) : error ? (
-            <div className="collection-empty">
-              <span className="collection-eyebrow">
-                COLLECTION
-              </span>
+        {/* =================================================
 
-              <h2>
-                Unable to load the Betta collection.
-              </h2>
+            CATEGORY FILTERS
 
-              <p>{error}</p>
+            ================================================= */}
 
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-              >
-                Try again
-              </button>
-            </div>
-          ) : filteredFish.length === 0 ? (
-            <div className="collection-empty">
-              <span className="collection-eyebrow">
-                NO RESULTS
-              </span>
+        <nav
 
-              <h2>
-                No Betta breeding pairs found.
-              </h2>
+          className="collection-categories"
+
+          aria-label="Fish categories"
+
+        >
+
+          <div className="collection-category-list">
+
+            {CATEGORIES.map(
+
+              (category) => (
+
+                <button
+
+                  key={category}
+
+                  type="button"
+
+                  className={
+
+                    activeCategory ===
+
+                    category
+
+                      ? "collection-category active"
+
+                      : "collection-category"
+
+                  }
+
+                  onClick={() =>
+
+                    setActiveCategory(
+
+                      category
+
+                    )
+
+                  }
+
+                >
+
+                  {category}
+
+                </button>
+
+              )
+
+            )}
+
+          </div>
+
+        </nav>
+
+        {/* =================================================
+
+            RESULTS
+
+            ================================================= */}
+
+        <div className="collection-results">
+
+          {/* =================================================
+
+              LOADING
+
+              ================================================= */}
+
+          {loading && (
+
+            <div className="collection-state">
+
+              <div className="collection-loader" />
 
               <p>
-                Try another variety, pattern or Betta name.
+
+                Loading fish...
+
               </p>
 
-              <button
-                type="button"
-                onClick={clearSearch}
-              >
-                View all Bettas
-              </button>
             </div>
-          ) : (
-            <div className="collection-grid">
-              {filteredFish.map((item) => (
-                <FishCard
-                  key={item.id}
-                  fish={item}
-                />
-              ))}
-            </div>
+
           )}
+
+          {/* =================================================
+
+              ERROR
+
+              ================================================= */}
+
+          {!loading &&
+
+            error && (
+
+              <div className="collection-state collection-error">
+
+                <p>
+
+                  {error}
+
+                </p>
+
+                <button
+
+                  type="button"
+
+                  onClick={() =>
+
+                    window.location.reload()
+
+                  }
+
+                >
+
+                  Try Again
+
+                </button>
+
+              </div>
+
+            )}
+
+          {/* =================================================
+
+              EMPTY
+
+              ================================================= */}
+
+          {!loading &&
+
+            !error &&
+
+            filteredFish.length === 0 && (
+
+              <div className="collection-state">
+
+                <div className="collection-empty-icon">
+
+                  ◌
+
+                </div>
+
+                <p>
+
+                  {search
+
+                    ? `No fish found for "${search}".`
+
+                    : activeCategory !==
+
+                      "All"
+
+                    ? `No fish available in ${activeCategory}.`
+
+                    : "No fish found."}
+
+                </p>
+
+              </div>
+
+            )}
+
+          {/* =================================================
+
+              FISH GRID
+
+              ================================================= */}
+
+          {!loading &&
+
+            !error &&
+
+            filteredFish.length > 0 && (
+
+              <div className="collection-grid">
+
+                {filteredFish.map(
+
+                  (item) => {
+
+                    const imageUrl =
+
+                      getFishImageUrl(
+
+                        item.image_url
+
+                      );
+
+                    return (
+
+                      <article
+
+                        key={item.id}
+
+                        className="collection-card"
+
+                      >
+
+                        {/* =====================================
+
+                            IMAGE
+
+                            ===================================== */}
+
+                        <div className="collection-card-image-wrapper">
+
+                          {imageUrl ? (
+
+                            <img
+
+                              src={imageUrl}
+
+                              alt={
+
+                                item.name ||
+
+                                "Aquarium fish"
+
+                              }
+
+                              className="collection-card-image"
+
+                              loading="lazy"
+
+                              decoding="async"
+
+                              onError={(event) => {
+
+                                console.error(
+
+                                  "FAILED TO LOAD FISH IMAGE:",
+
+                                  {
+
+                                    fish:
+
+                                      item.name,
+
+                                    databaseValue:
+
+                                      item.image_url,
+
+                                    generatedUrl:
+
+                                      event
+
+                                        .currentTarget
+
+                                        .src,
+
+                                  }
+
+                                );
+
+                                event.currentTarget.style.display =
+
+                                  "none";
+
+                              }}
+
+                            />
+
+                          ) : (
+
+                            <div className="collection-card-no-image">
+
+                              <span>
+
+                                No Image
+
+                              </span>
+
+                            </div>
+
+                          )}
+
+                        </div>
+
+                        {/* =====================================
+
+                            DETAILS
+
+                            ===================================== */}
+
+                        <div className="collection-card-content">
+
+                          {/* CATEGORY */}
+
+                          {item.categoryName && (
+
+                            <p className="collection-card-category">
+
+                              {item.categoryName}
+
+                            </p>
+
+                          )}
+
+                          {/* FISH NAME */}
+
+                          <h2>
+
+                            {item.name ||
+
+                              "Unnamed Fish"}
+
+                          </h2>
+
+                          {/* DESCRIPTION */}
+
+                          {item.description && (
+
+                            <p className="collection-card-description">
+
+                              {item.description}
+
+                            </p>
+
+                          )}
+
+                          {/* SIZE */}
+
+                          {item.size && (
+
+                            <div className="collection-card-meta">
+
+                              <span>
+
+                                {item.size}
+
+                              </span>
+
+                            </div>
+
+                          )}
+
+                          {/* PRICE + STOCK */}
+
+                          <div className="collection-card-bottom">
+
+                            {item.price !==
+
+                              null &&
+
+                              item.price !==
+
+                                undefined &&
+
+                              item.price !==
+
+                                "" && (
+
+                                <span className="collection-card-price">
+
+                                  {formatPrice(
+
+                                    item.price
+
+                                  )}
+
+                                </span>
+
+                              )}
+
+                            {item.stock !==
+
+                              null &&
+
+                              item.stock !==
+
+                                undefined && (
+
+                                <span
+
+                                  className={
+
+                                    `collection-card-stock ${
+
+                                      Number(
+
+                                        item.stock
+
+                                      ) > 0
+
+                                        ? "available"
+
+                                        : "sold-out"
+
+                                    }`
+
+                                  }
+
+                                >
+
+                                  <span className="stock-dot" />
+
+                                  {Number(
+
+                                    item.stock
+
+                                  ) > 0
+
+                                    ? "Available"
+
+                                    : "Sold Out"}
+
+                                </span>
+
+                              )}
+
+                          </div>
+
+                          {/* =================================
+
+                              WHATSAPP ENQUIRY
+
+                              ================================= */}
+
+                          <a
+
+                            href={
+
+                              `https://wa.me/918639955181?text=${encodeURIComponent(
+
+                                `Hi, I am interested in ${
+
+                                  item.name ||
+
+                                  "this fish"
+
+                                }. Please share the details and availability.`
+
+                              )}`
+
+                            }
+
+                            target="_blank"
+
+                            rel="noopener noreferrer"
+
+                            className="collection-whatsapp-button"
+
+                            aria-label={
+
+                              `Enquire about ${
+
+                                item.name ||
+
+                                "this fish"
+
+                              } on WhatsApp`
+
+                            }
+
+                          >
+
+                            <span
+
+                              className="collection-whatsapp-icon"
+
+                              aria-hidden="true"
+
+                            >
+
+                              ◉
+
+                            </span>
+
+                            <span>
+
+                              WhatsApp Enquire
+
+                            </span>
+
+                          </a>
+
+                        </div>
+
+                      </article>
+
+                    );
+
+                  }
+
+                )}
+
+              </div>
+
+            )}
+
         </div>
-      </section>
-    </main>
+
+      </div>
+
+    </section>
+
   );
+
 }

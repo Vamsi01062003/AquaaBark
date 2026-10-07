@@ -7,7 +7,7 @@ export default function Logo() {
       </span>
 
       <span>
-        REBAL <em>PETS</em>
+        MR. AQUATIC <em>VIZAG</em>
       </span>
     </div>
   );

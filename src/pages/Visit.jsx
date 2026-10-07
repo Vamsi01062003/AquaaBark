@@ -1,18 +1,26 @@
 import "./visit.css";
 
-const MAP_URL = "https://maps.app.goo.gl/pT8Wf6ptfnSHg2J38";
-const WHATSAPP = "https://wa.me/919384719311";
-const YOUTUBE = "https://youtube.com/@rebelpets5121?si=NVx5cArb57hhqAsC";
+const MAP_URL =
+  "https://www.google.com/maps/dir/?api=1&destination=17.7365259,83.2878451";
+
+const WHATSAPP = "https://wa.me/918639955181";
+
+const YOUTUBE_CHANNEL =
+  "https://youtube.com/@mr_aquatic_vizag?si=42hjlyyo0rzO9pzx";
+
 const INSTAGRAM =
-  "https://www.instagram.com/rebel_bettas_171?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw==";
+  "https://www.instagram.com/mr_aquatic_vizag?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw==";
+
+const YOUTUBE_VIDEO = "https://www.youtube.com/embed/LmYtmc3O8g0";
 
 export default function Visit() {
   return (
     <main className="visit-page">
       <section className="visit-hero">
         <div className="visit-container">
+          {/* LEFT SIDE — CONTENT */}
           <div className="visit-copy">
-            <p className="visit-eyebrow">REBAL PETS · THIRUCHENDUR</p>
+            <p className="visit-eyebrow">MR. AQUATIC VIZAG · VIZAG</p>
 
             <h1>
               Discover
@@ -21,28 +29,28 @@ export default function Visit() {
             </h1>
 
             <p className="visit-intro">
-              Rebal Pets specialises in imported premium Betta breeding pairs,
-              with a focus on rare varieties, distinctive colours and quality
-              breeding stock for Betta enthusiasts.
+              Mr. Aquatic Vizag specialises in premium aquarium fishes,
+              with a focus on quality varieties, distinctive colours and
+              carefully selected fish for aquarium enthusiasts.
             </p>
 
             <div className="visit-details">
               <div className="visit-detail">
                 <span className="visit-label">SPECIALITY</span>
-                <strong>Imported Premium Bettas</strong>
-                <small>Breeding pairs only</small>
+                <strong>Premium Aquarium Fishes</strong>
+                <small>Quality varieties for aquarium enthusiasts</small>
               </div>
 
               <div className="visit-detail">
                 <span className="visit-label">LOCATION</span>
-                <strong>Thiruchendur</strong>
+                <strong>Vizag</strong>
                 <small>Visit through the location link below</small>
               </div>
 
               <div className="visit-detail">
                 <span className="visit-label">WHATSAPP</span>
-                <strong>93847 19311</strong>
-                <small>For Betta availability & enquiries</small>
+                <strong>86399 55181</strong>
+                <small>For fish availability & enquiries</small>
               </div>
             </div>
 
@@ -51,7 +59,7 @@ export default function Visit() {
                 className="visit-button visit-button-gold"
                 href={MAP_URL}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 Get Directions
                 <span>↗</span>
@@ -61,7 +69,7 @@ export default function Visit() {
                 className="visit-button visit-button-outline"
                 href={WHATSAPP}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 WhatsApp Us
                 <span>↗</span>
@@ -70,9 +78,9 @@ export default function Visit() {
 
             <div className="visit-socials">
               <a
-                href={YOUTUBE}
+                href={YOUTUBE_CHANNEL}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 YouTube ↗
               </a>
@@ -80,40 +88,46 @@ export default function Visit() {
               <a
                 href={INSTAGRAM}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 Instagram ↗
               </a>
             </div>
           </div>
 
-          <div className="visit-video-wrap">
-            <div className="visit-video-card">
-              <div className="visit-video-top">
-                <span>FEATURED VIDEO</span>
-                <span>REBAL PETS</span>
+          {/* RIGHT SIDE — YOUTUBE VIDEO CARD */}
+          <div className="visit-video-card">
+            <div className="visit-video-header">
+              <span className="visit-video-label">MR. AQUATIC VIZAG</span>
+              <span className="visit-video-status">YOUTUBE</span>
+            </div>
+
+            <div className="visit-video-wrapper">
+              <iframe
+                src={YOUTUBE_VIDEO}
+                title="Mr. Aquatic Vizag YouTube Video"
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+
+            <div className="visit-video-footer">
+              <div>
+                <strong>Explore Our Aquarium</strong>
+                <small>
+                  Discover premium fishes and aquarium varieties.
+                </small>
               </div>
 
-              <div className="visit-video">
-                <iframe
-                  src="https://www.youtube.com/embed/LPctBS38Tqg"
-                  title="Rebal Pets Featured Video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </div>
-
-              <div className="visit-video-bottom">
-                <span>Rebal Pets · 25.9K+ Subscribers</span>
-
-                <a
-                  href={YOUTUBE}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Watch on YouTube ↗
-                </a>
-              </div>
+              <a
+                href={YOUTUBE_VIDEO.replace("/embed/", "/watch?v=")}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Watch video on YouTube"
+              >
+                ↗
+              </a>
             </div>
           </div>
         </div>

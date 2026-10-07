@@ -1,788 +1,1429 @@
 /* =========================================================
-   AQUAABARK — COLLECTION / FISH GALLERY
+   MR. AQUATIC VIZAG
+   COLLECTION PAGE
+   Premium dark aquarium / glass design
+   No collection_background.png required
+   ========================================================= */
+
+
+/* =========================================================
+   PAGE
    ========================================================= */
 
 .collection-page {
+  position: relative;
+  isolation: isolate;
+
+  width: 100%;
   min-height: 100vh;
+
+  overflow-x: hidden;
+
+  padding: 115px 5% 85px;
+
+  color: #ffffff;
+
+  /*
+    Neutral deep-water background.
+    Kept darker and less green so the actual fish
+    photographs remain the visual focus.
+  */
   background:
     radial-gradient(
-      circle at 15% 5%,
-      rgba(35, 92, 78, 0.16),
-      transparent 32%
+      ellipse at 50% -15%,
+      rgba(255, 255, 255, 0.055),
+      transparent 38%
     ),
     radial-gradient(
-      circle at 90% 35%,
-      rgba(20, 65, 55, 0.12),
-      transparent 35%
+      ellipse at 12% 20%,
+      rgba(43, 103, 112, 0.14),
+      transparent 34%
     ),
-    #020807;
-  color: #f7f5ee;
+    radial-gradient(
+      ellipse at 88% 28%,
+      rgba(34, 82, 94, 0.12),
+      transparent 36%
+    ),
+    linear-gradient(
+      180deg,
+      #071114 0%,
+      #050b0e 45%,
+      #030709 100%
+    );
 }
 
-/* ---------------------------------------------------------
-   CONTAINER
-   --------------------------------------------------------- */
 
-.collection-container {
-  width: min(1380px, 90vw);
-  margin: 0 auto;
-}
+/* =========================================================
+   PREMIUM UNDERWATER BACKGROUND
+   No external image
+   ========================================================= */
 
-/* ---------------------------------------------------------
-   HEADER
-   --------------------------------------------------------- */
-
-.collection-header {
-  position: relative;
-  padding: 110px 0 55px;
-  overflow: hidden;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.collection-header::before {
-  content: "";
+.collection-background {
   position: absolute;
-  width: 550px;
-  height: 550px;
-  right: -220px;
-  top: -280px;
-  border-radius: 50%;
-  background: rgba(232, 198, 107, 0.035);
-  filter: blur(10px);
+
+  inset: 0;
+
+  z-index: 0;
+
   pointer-events: none;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(113, 197, 202, 0.075),
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 0% 48%,
+      rgba(44, 112, 122, 0.07),
+      transparent 34%
+    ),
+    radial-gradient(
+      ellipse at 100% 52%,
+      rgba(40, 96, 108, 0.06),
+      transparent 35%
+    );
 }
 
-.collection-heading {
-  display: grid;
-  grid-template-columns: 1.1fr 0.65fr;
-  align-items: end;
-  gap: 100px;
-  padding-bottom: 65px;
+
+/* =========================================================
+   SOFT WATER LIGHT
+   ========================================================= */
+
+.collection-background::before {
+  content: "";
+
+  position: absolute;
+
+  inset: -25%;
+
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      105deg,
+      transparent 12%,
+      rgba(255, 255, 255, 0.018) 24%,
+      transparent 38%
+    ),
+    linear-gradient(
+      78deg,
+      transparent 36%,
+      rgba(120, 207, 211, 0.025) 49%,
+      transparent 63%
+    ),
+    linear-gradient(
+      116deg,
+      transparent 55%,
+      rgba(255, 255, 255, 0.014) 67%,
+      transparent 78%
+    );
+
+  transform: rotate(-2deg);
+
+  opacity: 0.9;
 }
 
-.collection-eyebrow {
-  display: inline-block;
-  color: #e8c66b;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.23em;
-  text-transform: uppercase;
+
+/* =========================================================
+   SUBTLE WATER PARTICLES
+   ========================================================= */
+
+.collection-background::after {
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      rgba(255, 255, 255, 0.08) 0 1px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 31% 68%,
+      rgba(164, 221, 222, 0.045) 0 1px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 72% 23%,
+      rgba(255, 255, 255, 0.055) 0 1px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 89% 73%,
+      rgba(156, 220, 222, 0.045) 0 1px,
+      transparent 1.5px
+    );
+
+  background-size:
+    290px 290px,
+    360px 360px,
+    330px 330px,
+    430px 430px;
+
+  opacity: 0.42;
 }
 
-.collection-heading h1 {
-  margin: 18px 0 0;
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: clamp(54px, 7vw, 100px);
-  font-weight: 400;
-  line-height: 0.92;
-  letter-spacing: -0.055em;
-}
 
-.collection-heading h1 em {
-  color: #fff0b7;
-  font-style: italic;
-}
+/* =========================================================
+   PAGE OVERLAY
+   ========================================================= */
 
-.collection-heading > p {
-  max-width: 510px;
-  margin: 0 0 5px;
-  color: #91a09b;
-  font-size: 14px;
-  line-height: 1.85;
-}
+.collection-overlay {
+  position: absolute;
 
-/* ---------------------------------------------------------
-   CONTROLS
-   --------------------------------------------------------- */
+  inset: 0;
 
-.collection-controls {
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  padding-top: 25px;
-}
+  z-index: 1;
 
-.category-filter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 2px 0 18px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(232, 198, 107, 0.35) transparent;
-}
+  pointer-events: none;
 
-.category-filter::-webkit-scrollbar {
-  height: 3px;
-}
-
-.category-filter::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.category-filter::-webkit-scrollbar-thumb {
-  background: rgba(232, 198, 107, 0.35);
-}
-
-.category-pill {
-  flex: 0 0 auto;
-  min-height: 42px;
-  padding: 0 15px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(4, 16, 14, 0.72);
-  color: #8f9c98;
-  font-size: 10px;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-  transition:
-    color 0.2s ease,
-    border-color 0.2s ease,
-    background 0.2s ease,
-    transform 0.2s ease;
-}
-
-.category-pill span {
-  min-width: 18px;
-  color: #65746f;
-  font-size: 9px;
-  text-align: right;
-}
-
-.category-pill:hover {
-  color: #f7f5ee;
-  border-color: rgba(232, 198, 107, 0.3);
-  transform: translateY(-1px);
-}
-
-.category-pill.active {
-  background: linear-gradient(
-    135deg,
-    rgba(17, 61, 50, 0.95),
-    rgba(7, 29, 25, 0.95)
-  );
-  border-color: rgba(232, 198, 107, 0.45);
-  color: #fff0b7;
-  box-shadow:
-    inset 0 0 0 1px rgba(232, 198, 107, 0.04),
-    0 8px 25px rgba(0, 0, 0, 0.18);
-}
-
-.category-pill.active span {
-  color: #e8c66b;
-}
-
-/* ---------------------------------------------------------
-   SEARCH
-   --------------------------------------------------------- */
-
-.collection-search-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 25px;
-  padding-top: 18px;
-}
-
-.collection-search-box {
-  width: min(430px, 100%);
-  height: 52px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(6, 20, 18, 0.82);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.collection-search-box:focus-within {
-  border-color: rgba(232, 198, 107, 0.4);
-  box-shadow: 0 0 0 3px rgba(232, 198, 107, 0.035);
-}
-
-.collection-search-box > svg {
-  flex: 0 0 auto;
-  color: #71807b;
-}
-
-.collection-search-box input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #f7f5ee;
-  font-family: inherit;
-  font-size: 12px;
-}
-
-.collection-search-box input::placeholder {
-  color: #5e6c68;
-}
-
-.collection-search-box input::-webkit-search-cancel-button {
-  display: none;
-}
-
-.collection-search-box button {
-  display: grid;
-  place-items: center;
-  padding: 4px;
-  border: 0;
-  background: transparent;
-  color: #73827d;
-  cursor: pointer;
-}
-
-.collection-search-box button:hover {
-  color: #e8c66b;
-}
-
-.collection-result-count {
-  color: #687873;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.collection-result-count span {
-  margin-right: 5px;
-  color: #e8c66b;
-}
-
-/* ---------------------------------------------------------
-   GALLERY
-   --------------------------------------------------------- */
-
-.collection-gallery {
-  padding: 75px 0 140px;
-}
-
-.collection-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 22px;
-}
-
-/* ---------------------------------------------------------
-   CARD
-   --------------------------------------------------------- */
-
-.collection-card {
-  min-width: 0;
   background:
     linear-gradient(
       180deg,
-      rgba(7, 24, 21, 0.96),
-      rgba(3, 13, 11, 0.98)
+      rgba(1, 8, 10, 0.04) 0%,
+      rgba(1, 7, 9, 0.08) 48%,
+      rgba(0, 3, 5, 0.34) 100%
     );
-  border: 1px solid rgba(255, 255, 255, 0.065);
+}
+
+
+/* =========================================================
+   CONTENT
+   ========================================================= */
+
+.collection-content {
+  position: relative;
+
+  z-index: 2;
+
+  width: 100%;
+
+  max-width: 1500px;
+
+  margin: 0 auto;
+}
+
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+
+.collection-search-wrapper {
+  width: 100%;
+
+  max-width: 680px;
+
+  margin: 0 auto 30px;
+}
+
+
+.collection-search {
+  position: relative;
+
+  width: 100%;
+
+  height: 56px;
+
+  display: flex;
+
+  align-items: center;
+
+  box-sizing: border-box;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.13);
+
+  border-radius: 30px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(20, 32, 36, 0.78),
+      rgba(7, 13, 16, 0.82)
+    );
+
+  backdrop-filter: blur(20px) saturate(115%);
+  -webkit-backdrop-filter: blur(20px) saturate(115%);
+
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+
+.collection-search:focus-within {
+  border-color:
+    rgba(150, 221, 222, 0.38);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(25, 40, 44, 0.84),
+      rgba(7, 14, 17, 0.88)
+    );
+
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.32),
+    0 0 0 3px rgba(139, 216, 218, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+
+/* Search icon */
+
+.collection-search-icon {
+  flex: 0 0 auto;
+
+  margin-left: 19px;
+
+  color:
+    rgba(255, 255, 255, 0.52);
+
+  font-size: 22px;
+
+  line-height: 1;
+
+  transform: rotate(-20deg);
+}
+
+
+/* Search input */
+
+.collection-search input {
+  width: 100%;
+
+  height: 100%;
+
+  min-width: 0;
+
+  padding: 0 15px;
+
+  border: 0;
+
+  outline: 0;
+
+  background: transparent;
+
+  color: #ffffff;
+
+  font-family: inherit;
+
+  font-size: 15px;
+}
+
+
+.collection-search input::placeholder {
+  color:
+    rgba(255, 255, 255, 0.42);
+}
+
+
+.collection-search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+
+/* Clear button */
+
+.collection-search-clear {
+  flex: 0 0 auto;
+
+  width: 32px;
+
+  height: 32px;
+
+  margin-right: 11px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border: 0;
+
+  border-radius: 50%;
+
+  background:
+    rgba(255, 255, 255, 0.065);
+
+  color:
+    rgba(255, 255, 255, 0.68);
+
+  font-family: inherit;
+
+  font-size: 20px;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+.collection-search-clear:hover {
+  transform: scale(1.05);
+
+  background:
+    rgba(255, 255, 255, 0.12);
+
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   CATEGORIES
+   ========================================================= */
+
+.collection-categories {
+  width: 100%;
+
+  margin: 0 auto 42px;
+}
+
+
+.collection-category-list {
+  width: 100%;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
+
+/* Category */
+
+.collection-category {
+  flex: 0 0 auto;
+
+  padding: 9px 15px;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.105);
+
+  border-radius: 22px;
+
+  background:
+    rgba(14, 23, 26, 0.72);
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  color:
+    rgba(255, 255, 255, 0.68);
+
+  font-family: inherit;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  line-height: 1.2;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.collection-category:hover {
+  transform: translateY(-2px);
+
+  border-color:
+    rgba(162, 219, 221, 0.28);
+
+  background:
+    rgba(27, 42, 46, 0.82);
+
+  color: #ffffff;
+
+  box-shadow:
+    0 9px 22px rgba(0, 0, 0, 0.2);
+}
+
+
+/* Active category */
+
+.collection-category.active {
+  border-color:
+    rgba(182, 228, 229, 0.48);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(137, 196, 199, 0.92),
+      rgba(99, 158, 162, 0.9)
+    );
+
+  color:
+    #071214;
+
+  box-shadow:
+    0 8px 25px rgba(103, 173, 177, 0.12);
+
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   RESULTS
+   ========================================================= */
+
+.collection-results {
+  width: 100%;
+}
+
+
+/* =========================================================
+   FISH GRID
+   ========================================================= */
+
+.collection-grid {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 24px;
+}
+
+
+/* =========================================================
+   FISH CARD
+   ========================================================= */
+
+.collection-card {
+  position: relative;
+
+  min-width: 0;
+
   overflow: hidden;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.095);
+
+  border-radius: 18px;
+
+  /*
+    More neutral glass.
+    This prevents the green background from changing
+    the appearance of fish photographs.
+  */
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(21, 30, 34, 0.82),
+      rgba(7, 12, 15, 0.91)
+    );
+
+  backdrop-filter: blur(18px) saturate(110%);
+  -webkit-backdrop-filter: blur(18px) saturate(110%);
+
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+
   transition:
     transform 0.3s ease,
     border-color 0.3s ease,
     box-shadow 0.3s ease;
 }
 
+
 .collection-card:hover {
   transform: translateY(-5px);
-  border-color: rgba(232, 198, 107, 0.25);
+
+  border-color:
+    rgba(173, 220, 222, 0.25);
+
   box-shadow:
-    0 22px 50px rgba(0, 0, 0, 0.32),
-    0 0 0 1px rgba(232, 198, 107, 0.025);
+    0 24px 50px rgba(0, 0, 0, 0.4),
+    0 0 28px rgba(120, 195, 198, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.065);
 }
+
+
+/* =========================================================
+   IMAGE AREA
+   ========================================================= */
+
+.collection-card-image-wrapper {
+  position: relative;
+
+  width: 100%;
+
+  aspect-ratio: 4 / 3;
+
+  overflow: hidden;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      rgba(69, 102, 108, 0.17),
+      rgba(4, 11, 14, 0.96) 76%
+    );
+
+  border-bottom:
+    1px solid rgba(255, 255, 255, 0.06);
+}
+
+
+/* Very subtle image-frame light */
+
+.collection-card-image-wrapper::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(184, 226, 227, 0.045),
+      transparent 60%
+    );
+
+  z-index: 0;
+}
+
+
+/* =========================================================
+   ACTUAL FISH IMAGE
+   ========================================================= */
 
 .collection-card-image {
   position: relative;
-  display: block;
-  width: 100%;
-  aspect-ratio: 1 / 1.08;
-  overflow: hidden;
-  background: #061311;
-}
 
-/* ---------------------------------------------------------
-   FULL IMAGE DISPLAY
-   --------------------------------------------------------- */
+  z-index: 1;
 
-.collection-card-image img {
   display: block;
+
   width: 100%;
+
   height: 100%;
+
+  /*
+    Keep contain so the original fish image is not cropped.
+  */
+
   object-fit: contain;
+
   object-position: center;
+
   padding: 10px;
+
   box-sizing: border-box;
+
   transition:
-    transform 0.55s cubic-bezier(0.2, 0.65, 0.3, 1),
-    filter 0.35s ease;
+    transform 0.4s ease,
+    filter 0.3s ease;
+
+  /*
+    Important:
+    Do NOT apply opacity or color filters here.
+    The actual Supabase image must remain natural.
+  */
 }
 
-.collection-card:hover .collection-card-image img {
+
+.collection-card:hover .collection-card-image {
   transform: scale(1.025);
-  filter: brightness(1.04);
+
+  filter: brightness(1.035);
 }
 
-.collection-card-image::after {
-  content: "";
+
+/* =========================================================
+   IMAGE FALLBACK
+   ========================================================= */
+
+.collection-card-no-image {
   position: absolute;
+
   inset: 0;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.12),
-      transparent 38%,
-      rgba(0, 0, 0, 0.34)
-    );
-  pointer-events: none;
-}
 
-.collection-image-placeholder {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(
-      circle,
-      rgba(232, 198, 107, 0.08),
-      transparent 55%
-    ),
-    #061311;
-  color: #8a9692;
-  font-size: 10px;
-  letter-spacing: 0.25em;
-}
-
-.collection-status {
-  position: absolute;
   z-index: 2;
-  left: 13px;
-  top: 13px;
-  display: inline-flex;
+
+  display: flex;
+
   align-items: center;
-  gap: 7px;
-  padding: 7px 10px;
-  background: rgba(2, 8, 7, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  color: #c7d0cd;
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+
+  justify-content: center;
+
+  padding: 20px;
+
+  color:
+    rgba(255, 255, 255, 0.34);
+
+  font-size: 12px;
+
+  letter-spacing: 0.04em;
+
+  text-align: center;
+
   text-transform: uppercase;
 }
 
-.status-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #82c99b;
-  box-shadow: 0 0 8px rgba(130, 201, 155, 0.55);
-}
 
-.collection-status.sold .status-dot {
-  background: #b86c62;
-  box-shadow: 0 0 8px rgba(184, 108, 98, 0.4);
-}
-
-.collection-status.sold {
-  color: #b9aaa7;
-}
-
-.collection-image-arrow {
-  position: absolute;
-  z-index: 3;
-  right: 13px;
-  top: 13px;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  background: rgba(2, 8, 7, 0.7);
-  color: #f7f5ee;
-  backdrop-filter: blur(8px);
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.collection-card:hover .collection-image-arrow {
-  background: #e8c66b;
-  color: #07100e;
-  transform: translate(2px, -2px);
-}
-
-/* ---------------------------------------------------------
+/* =========================================================
    CARD CONTENT
-   --------------------------------------------------------- */
+   ========================================================= */
 
 .collection-card-content {
-  padding: 19px 18px 18px;
+  padding: 18px 18px 17px;
 }
 
-.collection-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 18px;
-}
 
-.collection-card-top span {
-  overflow: hidden;
-  color: #6f7e79;
-  font-size: 8px;
-  letter-spacing: 0.12em;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
+/* Category */
 
-.collection-card-top span:first-child {
-  color: #b59d5c;
-}
+.collection-card-category {
+  margin: 0 0 7px;
 
-.collection-card h3 {
-  margin: 9px 0 0;
-  color: #f4f1e7;
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-}
+  color:
+    rgba(155, 210, 212, 0.78);
 
-.collection-card-content > p {
-  display: -webkit-box;
-  min-height: 38px;
-  margin: 10px 0 15px;
-  overflow: hidden;
-  color: #75837f;
   font-size: 10px;
-  line-height: 1.65;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+
+  font-weight: 800;
+
+  line-height: 1.3;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.09em;
 }
+
+
+/* Fish name */
+
+.collection-card-content h2 {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 18px;
+
+  font-weight: 750;
+
+  line-height: 1.3;
+
+  letter-spacing: -0.01em;
+
+  word-break: break-word;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+}
+
+
+/* Description */
+
+.collection-card-description {
+  margin: 9px 0 0;
+
+  color:
+    rgba(255, 255, 255, 0.53);
+
+  font-size: 12px;
+
+  line-height: 1.55;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   META
+   ========================================================= */
+
+.collection-card-meta {
+  display: flex;
+
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+  margin-top: 12px;
+}
+
+
+.collection-card-meta span {
+  padding: 5px 8px;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.075);
+
+  border-radius: 8px;
+
+  background:
+    rgba(255, 255, 255, 0.038);
+
+  color:
+    rgba(255, 255, 255, 0.54);
+
+  font-size: 10px;
+
+  line-height: 1.2;
+}
+
+
+/* =========================================================
+   BOTTOM ROW
+   ========================================================= */
 
 .collection-card-bottom {
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
+
   gap: 12px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.065);
+
+  margin-top: 16px;
 }
 
-.collection-card-bottom strong {
-  color: #e8c66b;
-  font-size: 13px;
-  font-weight: 600;
+
+/* Price */
+
+.collection-card-price {
+  color: #ffffff;
+
+  font-size: 19px;
+
+  font-weight: 800;
+
+  line-height: 1.2;
+
+  white-space: nowrap;
 }
 
-.collection-enquire {
+
+/* =========================================================
+   STOCK
+   ========================================================= */
+
+.collection-card-stock {
+  flex: 0 0 auto;
+
   display: inline-flex;
+
   align-items: center;
+
   gap: 6px;
-  color: #aab5b1;
+
+  padding: 6px 9px;
+
+  border-radius: 20px;
+
   font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+
+  font-weight: 750;
+
+  line-height: 1;
+
   text-transform: uppercase;
-  transition: color 0.2s ease;
+
+  letter-spacing: 0.04em;
+
+  white-space: nowrap;
 }
 
-.collection-enquire:hover {
-  color: #fff0b7;
+
+.stock-dot {
+  width: 6px;
+
+  height: 6px;
+
+  flex: 0 0 6px;
+
+  border-radius: 50%;
+
+  background: currentColor;
 }
 
-/* ---------------------------------------------------------
-   EMPTY STATE
-   --------------------------------------------------------- */
 
-.collection-empty {
-  min-height: 390px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+/* Available */
+
+.collection-card-stock.available {
+  color: #8fe0ad;
+
   background:
-    radial-gradient(
-      circle at 50% 30%,
-      rgba(232, 198, 107, 0.045),
-      transparent 45%
-    ),
-    #04100e;
+    rgba(68, 177, 118, 0.09);
+
+  border:
+    1px solid rgba(68, 177, 118, 0.16);
 }
 
-.collection-empty h2 {
-  max-width: 650px;
-  margin: 14px 0 10px;
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: clamp(38px, 5vw, 65px);
-  font-weight: 400;
-  line-height: 0.98;
-  letter-spacing: -0.045em;
+
+.collection-card-stock.available .stock-dot {
+  box-shadow:
+    0 0 7px rgba(103, 238, 165, 0.7);
 }
 
-.collection-empty p {
-  max-width: 500px;
-  margin: 0 0 25px;
-  color: #7e8c87;
-  font-size: 13px;
-  line-height: 1.7;
+
+/* Sold out */
+
+.collection-card-stock.sold-out {
+  color: #f0a4a4;
+
+  background:
+    rgba(210, 70, 70, 0.08);
+
+  border:
+    1px solid rgba(210, 70, 70, 0.15);
 }
 
-.collection-empty button {
-  display: inline-flex;
+
+/* =========================================================
+   WHATSAPP ENQUIRE BUTTON
+   Prepared for the updated JSX.
+   ========================================================= */
+
+.collection-whatsapp-button {
+  width: 100%;
+
+  min-height: 42px;
+
+  margin-top: 14px;
+
+  display: flex;
+
   align-items: center;
-  min-height: 44px;
-  padding: 0 18px;
-  border: 1px solid rgba(232, 198, 107, 0.38);
-  background: transparent;
-  color: #e8c66b;
-  font-size: 10px;
-  cursor: pointer;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
-}
 
-.collection-empty button:hover {
-  background: #e8c66b;
-  color: #07100e;
-}
+  justify-content: center;
 
-/* ---------------------------------------------------------
-   SKELETON
-   --------------------------------------------------------- */
+  gap: 8px;
 
-.collection-skeleton {
-  pointer-events: none;
-}
+  padding: 10px 14px;
 
-.skeleton-image {
-  aspect-ratio: 1 / 1.08;
+  border:
+    1px solid rgba(112, 213, 164, 0.22);
+
+  border-radius: 11px;
+
   background:
     linear-gradient(
-      90deg,
-      #061311 25%,
-      #0b1d19 50%,
-      #061311 75%
+      135deg,
+      rgba(38, 143, 99, 0.18),
+      rgba(21, 94, 68, 0.14)
     );
-  background-size: 200% 100%;
-  animation: collectionShimmer 1.5s infinite;
+
+  color:
+    rgba(226, 255, 239, 0.92);
+
+  font-family: inherit;
+
+  font-size: 11px;
+
+  font-weight: 750;
+
+  letter-spacing: 0.02em;
+
+  text-decoration: none;
+
+  cursor: pointer;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.skeleton-content {
-  padding: 20px;
+
+.collection-whatsapp-button:hover {
+  transform: translateY(-1px);
+
+  border-color:
+    rgba(112, 213, 164, 0.38);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(38, 143, 99, 0.28),
+      rgba(21, 94, 68, 0.23)
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 8px 22px rgba(21, 94, 68, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.skeleton-content span {
-  display: block;
-  height: 9px;
-  margin-bottom: 13px;
-  background: #10221f;
-  animation: collectionShimmer 1.5s infinite;
+
+.collection-whatsapp-button:active {
+  transform: translateY(0);
 }
 
-.skeleton-content span:nth-child(1) {
-  width: 32%;
+
+.collection-whatsapp-icon {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 15px;
+
+  line-height: 1;
 }
 
-.skeleton-content span:nth-child(2) {
-  width: 75%;
-  height: 20px;
+
+/* =========================================================
+   LOADING / EMPTY / ERROR
+   ========================================================= */
+
+.collection-state {
+  min-height: 260px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 13px;
+
+  color:
+    rgba(255, 255, 255, 0.62);
+
+  text-align: center;
+
+  font-size: 14px;
 }
 
-.skeleton-content span:nth-child(3) {
-  width: 48%;
+
+.collection-state p {
+  margin: 0;
 }
 
-@keyframes collectionShimmer {
-  0% {
-    background-position: 200% 0;
+
+/* Loader */
+
+.collection-loader {
+  width: 30px;
+
+  height: 30px;
+
+  border:
+    2px solid rgba(255, 255, 255, 0.13);
+
+  border-top-color:
+    rgba(161, 213, 215, 0.88);
+
+  border-radius: 50%;
+
+  animation:
+    collection-spin 0.8s linear infinite;
+}
+
+
+@keyframes collection-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* Empty icon */
+
+.collection-empty-icon {
+  font-size: 32px;
+
+  color:
+    rgba(161, 213, 215, 0.4);
+}
+
+
+/* Error */
+
+.collection-error {
+  max-width: 520px;
+
+  margin: 40px auto;
+
+  padding: 25px;
+
+  border:
+    1px solid rgba(255, 92, 92, 0.18);
+
+  border-radius: 16px;
+
+  background:
+    rgba(72, 8, 8, 0.22);
+
+  color:
+    rgba(255, 255, 255, 0.78);
+}
+
+
+.collection-error button {
+  padding: 9px 17px;
+
+  border: 0;
+
+  border-radius: 20px;
+
+  background:
+    rgba(255, 255, 255, 0.9);
+
+  color:
+    #071214;
+
+  font-family: inherit;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+
+.collection-error button:hover {
+  transform: translateY(-1px);
+
+  background: #ffffff;
+}
+
+
+/* =========================================================
+   LARGE TABLET
+   ========================================================= */
+
+@media (max-width: 1200px) {
+  .collection-page {
+    padding-left: 4%;
+
+    padding-right: 4%;
   }
 
-  100% {
-    background-position: -200% 0;
+
+  .collection-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 21px;
   }
 }
 
-/* ---------------------------------------------------------
+
+/* =========================================================
    TABLET
-   --------------------------------------------------------- */
+   ========================================================= */
 
-@media (max-width: 1100px) {
-  .collection-heading {
-    grid-template-columns: 1fr 0.75fr;
-    gap: 55px;
+@media (max-width: 900px) {
+  .collection-page {
+    padding-top: 100px;
   }
+
 
   .collection-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 18px;
   }
 
-  .collection-card h3 {
-    font-size: 22px;
+
+  .collection-category-list {
+    justify-content: flex-start;
+
+    overflow-x: auto;
+
+    flex-wrap: nowrap;
+
+    padding: 3px 2px 9px;
+
+    scrollbar-width: none;
+  }
+
+
+  .collection-category-list::-webkit-scrollbar {
+    display: none;
   }
 }
 
-/* ---------------------------------------------------------
+
+/* =========================================================
    MOBILE
-   --------------------------------------------------------- */
+   ========================================================= */
 
-@media (max-width: 760px) {
-  .collection-container {
-    width: min(92vw, 600px);
+@media (max-width: 600px) {
+  .collection-page {
+    padding:
+      86px 14px 55px;
   }
 
-  .collection-header {
-    padding: 75px 0 35px;
+
+  .collection-search-wrapper {
+    margin-bottom: 23px;
   }
 
-  .collection-heading {
-    display: block;
-    padding-bottom: 38px;
+
+  .collection-search {
+    height: 51px;
   }
 
-  .collection-heading h1 {
-    font-size: clamp(47px, 14vw, 72px);
+
+  .collection-search-icon {
+    margin-left: 16px;
+
+    font-size: 20px;
   }
 
-  .collection-heading > p {
-    margin-top: 28px;
-    font-size: 12px;
+
+  .collection-search input {
+    padding: 0 10px;
+
+    font-size: 14px;
   }
 
-  .collection-controls {
-    padding-top: 18px;
+
+  .collection-categories {
+    margin-bottom: 30px;
   }
 
-  .category-filter {
-    margin-right: -4vw;
-    padding-right: 4vw;
+
+  .collection-category {
+    padding: 8px 13px;
+
+    font-size: 11px;
   }
 
-  .category-pill {
-    min-height: 40px;
-    padding: 0 13px;
-    font-size: 9px;
-  }
-
-  .collection-search-row {
-    display: block;
-    padding-top: 15px;
-  }
-
-  .collection-search-box {
-    width: 100%;
-  }
-
-  .collection-result-count {
-    margin-top: 13px;
-  }
-
-  .collection-gallery {
-    padding: 42px 0 90px;
-  }
 
   .collection-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
     gap: 12px;
   }
 
-  .collection-card-image {
-    aspect-ratio: 1 / 1.04;
+
+  /* Mobile image */
+
+  .collection-card-image-wrapper {
+    aspect-ratio: 1 / 1;
   }
+
+
+  .collection-card-image {
+    padding: 7px;
+  }
+
+
+  .collection-card {
+    border-radius: 15px;
+  }
+
 
   .collection-card-content {
-    padding: 13px 12px 13px;
+    padding: 13px;
   }
 
-  .collection-card-top span {
-    font-size: 6.5px;
-  }
 
-  .collection-card h3 {
-    margin-top: 7px;
-    font-size: 18px;
-  }
+  .collection-card-category {
+    margin-bottom: 5px;
 
-  .collection-card-content > p {
-    min-height: 32px;
-    margin: 7px 0 10px;
     font-size: 8px;
   }
 
-  .collection-card-bottom {
-    padding-top: 10px;
+
+  .collection-card-content h2 {
+    font-size: 14px;
   }
 
-  .collection-card-bottom strong {
+
+  .collection-card-description {
+    margin-top: 7px;
+
     font-size: 10px;
+
+    line-height: 1.45;
   }
 
-  .collection-enquire {
-    font-size: 7px;
-    gap: 3px;
+
+  .collection-card-meta {
+    margin-top: 8px;
+
+    gap: 4px;
   }
 
-  .collection-status {
-    left: 8px;
-    top: 8px;
+
+  .collection-card-meta span {
+    padding: 4px 6px;
+
+    font-size: 8px;
+  }
+
+
+  .collection-card-bottom {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+    margin-top: 11px;
+  }
+
+
+  .collection-card-price {
+    font-size: 16px;
+  }
+
+
+  .collection-card-stock {
     padding: 5px 7px;
-    font-size: 6px;
+
+    font-size: 8px;
   }
 
-  .collection-image-arrow {
-    right: 8px;
-    top: 8px;
-    width: 27px;
-    height: 27px;
+
+  /* WhatsApp */
+
+  .collection-whatsapp-button {
+    min-height: 39px;
+
+    margin-top: 11px;
+
+    padding: 9px 10px;
+
+    border-radius: 9px;
+
+    font-size: 9px;
   }
 
-  .collection-empty {
-    min-height: 320px;
-    padding: 30px 24px;
-  }
 
-  .collection-empty h2 {
-    font-size: 42px;
+  .collection-whatsapp-icon {
+    font-size: 13px;
   }
 }
 
-/* ---------------------------------------------------------
-   SMALL MOBILE
-   --------------------------------------------------------- */
 
-@media (max-width: 430px) {
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 380px) {
+  .collection-page {
+    padding-left: 10px;
+
+    padding-right: 10px;
+  }
+
+
   .collection-grid {
     gap: 9px;
   }
 
-  .collection-card h3 {
-    font-size: 16px;
+
+  .collection-card-content {
+    padding: 11px;
   }
 
-  .collection-card-top span:last-child {
-    display: none;
+
+  .collection-card-content h2 {
+    font-size: 13px;
   }
 
-  .collection-enquire {
-    font-size: 0;
+
+  .collection-card-price {
+    font-size: 15px;
   }
 
-  .collection-enquire svg {
-    width: 15px;
-    height: 15px;
+
+  .collection-whatsapp-button {
+    font-size: 8px;
+
+    padding-left: 7px;
+
+    padding-right: 7px;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .collection-card,
+  .collection-card-image,
+  .collection-category,
+  .collection-search-clear,
+  .collection-whatsapp-button {
+    transition: none;
+  }
+
+
+  .collection-loader {
+    animation: none;
   }
 }

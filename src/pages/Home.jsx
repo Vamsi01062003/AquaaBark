@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useRef } from "react";
 
 import Collection from "./Collection";
 import Visit from "./Visit";
@@ -6,62 +6,59 @@ import Visit from "./Visit";
 import "./home.css";
 
 export default function Home() {
-  useEffect(() => {
-    const handleKey = (event) => {
-      if (
-        event.key === "Enter" &&
-        document.activeElement?.id === "hero-explore-button"
-      ) {
-        document.getElementById("fish-collection")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    };
+  const collectionRef = useRef(null);
 
-    window.addEventListener("keydown", handleKey);
-
-    return () => {
-      window.removeEventListener("keydown", handleKey);
-    };
-  }, []);
-
-  const handleExplore = () => {
-    document.getElementById("fish-collection")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+  const scrollToCollection = () => {
+    if (collectionRef.current) {
+      collectionRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
   };
 
   return (
     <main className="home-page">
 
-      {/* 1. HERO */}
-      <section className="hero-exact" id="home">
+      {/* HERO */}
+      <section
+        id="home"
+        className="hero-exact"
+        aria-label="Mr. Aquatic Vizag"
+      >
+        {/* Background image */}
         <img
-          src="/rebel_background.png"
-          alt="Rebel Pets — Imported Premium Betta Breeding Pairs"
+          src="/home_background.png"
+          alt="Mr. Aquatic Vizag"
           className="hero-background"
         />
 
+        {/* Transparent Explore Button */}
         <button
-          id="hero-explore-button"
+          type="button"
           className="hero-explore-button"
-          onClick={handleExplore}
-          aria-label="Explore Imported Betta Breeding Pairs"
+          onClick={scrollToCollection}
+          aria-label="Explore Collection"
         >
           <span>Explore Collection</span>
           <span className="hero-explore-arrow">→</span>
         </button>
       </section>
 
-      {/* 2. BETTA COLLECTION */}
-      <section id="fish-collection">
+      {/* COLLECTION */}
+      <section
+        ref={collectionRef}
+        id="fish-collection"
+        className="home-collection-section"
+      >
         <Collection />
       </section>
 
-      {/* 3. VISIT */}
-      <section id="visit-section">
+      {/* VISIT */}
+      <section
+        id="visit-section"
+        className="home-visit-section"
+      >
         <Visit />
       </section>
 

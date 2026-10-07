@@ -1,278 +1,838 @@
+/* =========================================================
+   MR. AQUATIC VIZAG
+   ABOUT / VISIT PAGE
+   PREMIUM DARK AQUARIUM DESIGN
+   ========================================================= */
+
 .visit-page {
+  position: relative;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 80% 20%, rgba(232, 198, 107, 0.06), transparent 30%),
-    linear-gradient(180deg, #020807 0%, #03100e 55%, #020807 100%);
+  overflow: hidden;
+
   color: #f7f5ee;
+
+  background:
+    radial-gradient(
+      circle at 78% 18%,
+      rgba(91, 112, 108, 0.16),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 18% 78%,
+      rgba(67, 83, 80, 0.1),
+      transparent 34%
+    ),
+    linear-gradient(
+      135deg,
+      #050908 0%,
+      #080d0c 45%,
+      #0b1110 100%
+    );
 }
+
+
+/* =========================================================
+   PREMIUM BACKGROUND DETAILS
+   ========================================================= */
+
+.visit-page::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at 82% 35%,
+      rgba(255, 255, 255, 0.045) 0,
+      transparent 22%
+    ),
+    radial-gradient(
+      circle at 55% 90%,
+      rgba(232, 198, 107, 0.035) 0,
+      transparent 25%
+    );
+
+  opacity: 1;
+}
+
+
+/* subtle aquarium light */
+
+.visit-page::after {
+  content: "";
+
+  position: absolute;
+
+  top: -20%;
+  right: 4%;
+
+  width: 420px;
+  height: 900px;
+
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.045),
+      transparent 70%
+    );
+
+  transform: rotate(17deg);
+
+  filter: blur(35px);
+
+  opacity: 0.28;
+}
+
+
+/* =========================================================
+   HERO
+   ========================================================= */
 
 .visit-hero {
-  min-height: calc(100vh - 1px);
+  position: relative;
+
+  min-height: 100vh;
+
   display: flex;
+
   align-items: center;
+
   padding: 120px 0 110px;
+
+  isolation: isolate;
 }
+
+
+/* =========================================================
+   HERO LIGHT / DEPTH
+   ========================================================= */
+
+.visit-hero::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  z-index: -1;
+
+  background:
+    radial-gradient(
+      ellipse at 78% 45%,
+      rgba(255, 255, 255, 0.055),
+      transparent 35%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(4, 8, 7, 0.98) 0%,
+      rgba(4, 8, 7, 0.9) 38%,
+      rgba(4, 8, 7, 0.62) 67%,
+      rgba(4, 8, 7, 0.25) 100%
+    );
+}
+
+
+/* =========================================================
+   CONTENT CONTAINER
+   ========================================================= */
 
 .visit-container {
-  width: min(1320px, 86vw);
+  position: relative;
+
+  width: min(1320px, 88vw);
+
   margin: 0 auto;
+
   display: grid;
-  grid-template-columns: 1fr 0.9fr;
-  gap: 90px;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(390px, 0.72fr);
+
   align-items: center;
+
+  gap: clamp(50px, 7vw, 110px);
 }
 
+
+/* =========================================================
+   LEFT CONTENT
+   ========================================================= */
+
 .visit-copy {
+  position: relative;
+
+  z-index: 2;
+
+  width: 100%;
+
   max-width: 650px;
 }
 
+
+/* =========================================================
+   EYEBROW
+   ========================================================= */
+
 .visit-eyebrow {
   margin: 0 0 24px;
+
   color: #e8c66b;
+
   font-size: 10px;
+
   font-weight: 700;
+
   letter-spacing: 0.24em;
+
   text-transform: uppercase;
 }
 
+
+/* =========================================================
+   HEADING
+   ========================================================= */
+
 .visit-copy h1 {
   margin: 0;
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: clamp(56px, 6vw, 92px);
+
+  font-family:
+    "Playfair Display",
+    Georgia,
+    serif;
+
+  font-size:
+    clamp(56px, 6vw, 92px);
+
   font-weight: 400;
+
   line-height: 0.94;
+
   letter-spacing: -0.055em;
 }
 
 .visit-copy h1 em {
   color: #fff0b7;
+
   font-style: italic;
 }
 
+
+/* =========================================================
+   INTRO
+   ========================================================= */
+
 .visit-intro {
   max-width: 570px;
+
   margin: 34px 0 45px;
-  color: #9ba9a5;
+
+  color: #a5b2ae;
+
   font-size: 15px;
+
   line-height: 1.9;
 }
 
+
+/* =========================================================
+   DETAILS
+   ========================================================= */
+
 .visit-details {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top:
+    1px solid rgba(255, 255, 255, 0.1);
 }
 
 .visit-detail {
   display: grid;
+
   grid-template-columns: 130px 1fr;
+
   gap: 18px;
+
   padding: 19px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-bottom:
+    1px solid rgba(255, 255, 255, 0.08);
 }
 
 .visit-label {
   color: #e8c66b;
+
   font-size: 9px;
+
   font-weight: 700;
+
   letter-spacing: 0.16em;
 }
 
 .visit-detail strong {
-  font-size: 13px;
-  font-weight: 600;
   color: #f7f5ee;
+
+  font-size: 13px;
+
+  font-weight: 600;
 }
 
 .visit-detail small {
   grid-column: 2;
+
   margin-top: -10px;
+
   color: #687873;
+
   font-size: 11px;
 }
 
+
+/* =========================================================
+   ACTION BUTTONS
+   ========================================================= */
+
 .visit-actions {
   display: flex;
+
   flex-wrap: wrap;
+
   gap: 12px;
+
   margin-top: 32px;
 }
 
 .visit-button {
   min-height: 48px;
+
   display: inline-flex;
+
   align-items: center;
+
   justify-content: center;
+
   gap: 22px;
+
   padding: 0 20px;
+
+  border-radius: 2px;
+
   font-size: 11px;
+
   font-weight: 600;
+
   letter-spacing: 0.04em;
+
   text-decoration: none;
+
   transition:
-    transform 0.2s ease,
-    background 0.2s ease,
-    border-color 0.2s ease;
+    transform 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .visit-button:hover {
   transform: translateY(-2px);
 }
 
+
+/* =========================================================
+   GOLD BUTTON
+   ========================================================= */
+
 .visit-button-gold {
   background: #e8c66b;
+
   color: #06100d;
+
+  box-shadow:
+    0 8px 30px rgba(232, 198, 107, 0.1);
 }
 
 .visit-button-gold:hover {
   background: #f0d27f;
+
+  box-shadow:
+    0 10px 35px rgba(232, 198, 107, 0.18);
 }
 
+
+/* =========================================================
+   OUTLINE BUTTON
+   ========================================================= */
+
 .visit-button-outline {
-  border: 1px solid rgba(232, 198, 107, 0.35);
+  border:
+    1px solid rgba(232, 198, 107, 0.32);
+
   color: #f7f5ee;
-  background: rgba(255, 255, 255, 0.02);
+
+  background:
+    rgba(255, 255, 255, 0.025);
+
+  backdrop-filter: blur(10px);
 }
 
 .visit-button-outline:hover {
   border-color: #e8c66b;
+
+  background:
+    rgba(232, 198, 107, 0.06);
 }
+
+
+/* =========================================================
+   SOCIAL LINKS
+   ========================================================= */
 
 .visit-socials {
   display: flex;
+
   gap: 28px;
+
   margin-top: 32px;
 }
 
 .visit-socials a {
   color: #8d9d98;
+
   font-size: 11px;
+
   text-decoration: none;
-  transition: color 0.2s ease;
+
+  transition:
+    color 0.2s ease;
 }
 
 .visit-socials a:hover {
   color: #e8c66b;
 }
 
-/* Video */
 
-.visit-video-wrap {
-  width: 100%;
-}
+/* =========================================================
+   YOUTUBE VIDEO CARD
+   ========================================================= */
 
 .visit-video-card {
-  padding: 16px;
+  position: relative;
+
+  width: 100%;
+
+  max-width: 520px;
+
+  justify-self: end;
+
+  overflow: hidden;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.1);
+
+  border-radius: 10px;
+
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  box-shadow: 0 35px 100px rgba(0, 0, 0, 0.4);
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.075),
+      rgba(255, 255, 255, 0.025)
+    );
+
+  box-shadow:
+    0 35px 90px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  backdrop-filter: blur(18px);
+
+  -webkit-backdrop-filter: blur(18px);
 }
 
-.visit-video-top,
-.visit-video-bottom {
+
+/* =========================================================
+   VIDEO CARD TOP
+   ========================================================= */
+
+.visit-video-header {
+  min-height: 54px;
+
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
-  padding: 8px 4px 14px;
+
+  padding: 0 18px;
+
+  border-bottom:
+    1px solid rgba(255, 255, 255, 0.08);
 }
 
-.visit-video-top {
-  color: #73827e;
-  font-size: 8px;
+.visit-video-label {
+  color: #f7f5ee;
+
+  font-size: 10px;
+
   font-weight: 700;
+
+  letter-spacing: 0.16em;
+}
+
+.visit-video-status {
+  color: #e8c66b;
+
+  font-size: 8px;
+
+  font-weight: 700;
+
   letter-spacing: 0.18em;
 }
 
-.visit-video {
+
+/* =========================================================
+   VIDEO
+   ========================================================= */
+
+.visit-video-wrapper {
   position: relative;
+
   width: 100%;
-  aspect-ratio: 16 / 10;
+
+  aspect-ratio: 16 / 9;
+
   overflow: hidden;
-  background: #000;
+
+  background: #030606;
 }
 
-.visit-video iframe {
+.visit-video-wrapper iframe {
+  position: absolute;
+
+  inset: 0;
+
   width: 100%;
+
   height: 100%;
-  display: block;
+
   border: 0;
 }
 
-.visit-video-bottom {
-  padding: 15px 4px 4px;
+
+/* =========================================================
+   VIDEO FOOTER
+   ========================================================= */
+
+.visit-video-footer {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 20px 20px 21px;
 }
 
-.visit-video-bottom span {
-  color: #c8d0cc;
-  font-size: 11px;
+.visit-video-footer div {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 6px;
 }
 
-.visit-video-bottom a {
-  color: #e8c66b;
+.visit-video-footer strong {
+  color: #f7f5ee;
+
+  font-size: 13px;
+
+  font-weight: 600;
+}
+
+.visit-video-footer small {
+  color: #7e8c88;
+
   font-size: 10px;
-  text-decoration: none;
+
+  line-height: 1.5;
 }
 
-@media (max-width: 950px) {
-  .visit-hero {
-    padding: 100px 0 80px;
-  }
+.visit-video-footer a {
+  width: 36px;
 
+  height: 36px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+    1px solid rgba(232, 198, 107, 0.28);
+
+  border-radius: 50%;
+
+  color: #e8c66b;
+
+  font-size: 15px;
+
+  text-decoration: none;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.visit-video-footer a:hover {
+  transform: translateY(-2px);
+
+  border-color: #e8c66b;
+
+  background:
+    rgba(232, 198, 107, 0.08);
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 1050px) {
   .visit-container {
+    width: min(90vw, 820px);
+
     grid-template-columns: 1fr;
+
     gap: 60px;
   }
 
   .visit-copy {
-    max-width: none;
+    max-width: 700px;
   }
 
-  .visit-video-wrap {
-    max-width: 720px;
+  .visit-video-card {
+    max-width: 620px;
+
+    justify-self: start;
+  }
+
+  .visit-hero::before {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(4, 8, 7, 0.96) 0%,
+        rgba(4, 8, 7, 0.82) 55%,
+        rgba(4, 8, 7, 0.95) 100%
+      );
   }
 }
 
-@media (max-width: 600px) {
+
+/* =========================================================
+   TABLET / SMALL LAPTOP
+   ========================================================= */
+
+@media (max-width: 950px) {
   .visit-hero {
-    padding: 80px 0 60px;
+    min-height: 100vh;
+
+    padding: 110px 0 90px;
+  }
+
+  .visit-container {
+    width: min(90vw, 720px);
+  }
+
+  .visit-copy {
+    width: 100%;
+
+    max-width: 650px;
+  }
+
+  .visit-copy h1 {
+    font-size:
+      clamp(56px, 8vw, 78px);
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .visit-page {
+    min-height: 100%;
+  }
+
+  .visit-hero {
+    min-height: 100vh;
+
+    padding: 90px 0 60px;
+
+    align-items: flex-start;
   }
 
   .visit-container {
     width: min(90vw, 600px);
-    gap: 45px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 48px;
+
+    align-items: stretch;
+  }
+
+  .visit-copy {
+    width: 100%;
+
+    max-width: none;
+  }
+
+  .visit-eyebrow {
+    margin-bottom: 20px;
+
+    font-size: 9px;
+
+    letter-spacing: 0.19em;
   }
 
   .visit-copy h1 {
-    font-size: clamp(48px, 15vw, 70px);
+    font-size:
+      clamp(48px, 15vw, 70px);
   }
 
   .visit-intro {
+    margin:
+      28px 0 38px;
+
     font-size: 14px;
+
     line-height: 1.8;
   }
 
+
+  /* DETAILS */
+
   .visit-detail {
     grid-template-columns: 1fr;
+
     gap: 8px;
+
+    padding: 17px 0;
   }
 
   .visit-detail small {
     grid-column: 1;
+
     margin-top: 0;
   }
 
+
+  /* BUTTONS */
+
   .visit-actions {
     flex-direction: column;
+
+    margin-top: 28px;
   }
 
   .visit-button {
     width: 100%;
   }
 
+
+  /* SOCIALS */
+
   .visit-socials {
     justify-content: center;
+
+    margin-top: 28px;
   }
 
+
+  /* VIDEO */
+
   .visit-video-card {
-    padding: 10px;
+    width: 100%;
+
+    max-width: none;
+
+    border-radius: 8px;
+  }
+
+  .visit-video-header {
+    min-height: 48px;
+
+    padding: 0 14px;
+  }
+
+  .visit-video-label {
+    font-size: 9px;
+  }
+
+  .visit-video-status {
+    font-size: 7px;
+  }
+
+  .visit-video-footer {
+    padding: 17px 15px 18px;
+  }
+
+  .visit-video-footer strong {
+    font-size: 12px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 380px) {
+  .visit-hero {
+    padding-top: 82px;
+  }
+
+  .visit-container {
+    width: 92vw;
+  }
+
+  .visit-copy h1 {
+    font-size: 46px;
+  }
+
+  .visit-intro {
+    font-size: 13px;
+  }
+
+  .visit-video-footer {
+    gap: 12px;
+  }
+
+  .visit-video-footer small {
+    font-size: 9px;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .visit-button,
+  .visit-socials a,
+  .visit-video-footer a {
+    transition: none;
   }
 }
