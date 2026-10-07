@@ -1,6 +1,7 @@
 {
   "projects": {
-    "production": "rebelpetstore"
+    "production": "mr-aquaticvizag",
+    "default": "mr-aquaticvizag"
   },
   "targets": {},
   "etags": {}
